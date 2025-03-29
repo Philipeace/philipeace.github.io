@@ -1,0 +1,503 @@
+/* Global Styles */
+:root {
+  --bg-color: #013220;           /* Dark green background */
+  --secondary-bg-color: #022d1f;  /* Slightly darker for sections */
+  --accent-color: #D4AF37;        /* Rich gold accent */
+  --secondary-accent: #89a17f;    /* Muted green accent */
+  --text-color: #f0f0e0;          /* Slightly off-white with a silver/grey/yellow tint */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Basic Focus Styles */
+a:focus, button:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+/* Adjust focus for specific elements if needed */
+.navbar ul li a:focus {
+  outline: none; /* Remove default outline */
+  color: var(--accent-color); /* Use hover color */
+  text-decoration: underline; /* Add underline for focus indication */
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.primary-btn:focus, .secondary-btn:focus {
+    outline: 2px solid var(--text-color); /* High contrast outline */
+    outline-offset: 2px;
+}
+
+
+/* Navigation */
+.navbar {
+  background-color: var(--secondary-bg-color);
+  padding: 1rem;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+}
+
+.navbar ul li {
+  margin: 0 1rem;
+}
+
+.navbar ul li a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s, text-decoration 0.3s;
+}
+
+.navbar ul li a:hover {
+  color: var(--accent-color);
+}
+
+/* Hero Section */
+.hero {
+  height: 100vh;
+  background: var(--secondary-bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding-top: 60px; /* Account for fixed navbar */
+}
+
+.hero-content {
+  text-align: center;
+  z-index: 2; /* Ensure content is above background elements */
+}
+
+.hero-title {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.hero-subtitle {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Base styles shared by buttons in hero links */
+.hero-links a {
+  padding: 0.75rem 1.5rem;
+  margin: 0 0.5rem;
+  border: none; /* Base reset, specific buttons add border */
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  transition: background 0.3s, color 0.3s;
+  display: inline-block; /* Ensure margins apply correctly */
+}
+
+/* Primary button style */
+.primary-btn {
+  background-color: var(--accent-color);
+  color: var(--bg-color);
+  /* Inherits shared styles from .hero-links a if used there */
+  /* Add base styles if used outside hero-links */
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  display: inline-block;
+  cursor: pointer;
+  border: 2px solid transparent; /* Match border thickness for alignment */
+}
+
+.primary-btn:hover {
+  background-color: var(--secondary-accent);
+}
+
+/* Secondary button style */
+.secondary-btn {
+  background-color: transparent;
+  border: 2px solid var(--accent-color);
+  color: var(--accent-color);
+   /* Inherits shared styles from .hero-links a if used there */
+  /* Add base styles if used outside hero-links */
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  display: inline-block;
+   cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background-color: var(--accent-color);
+  color: var(--bg-color);
+}
+
+/* Section Styles */
+.section {
+  padding: 4rem 2rem;
+  position: relative; /* Needed for absolute positioned shapes */
+  overflow: hidden; /* Contain shapes within section boundaries */
+}
+
+.section.alt-bg {
+  background-color: var(--secondary-bg-color);
+}
+
+.section h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  z-index: 2; /* Ensure title is above background elements */
+  position: relative; /* Ensure z-index applies */
+}
+
+.section-content {
+  max-width: 800px;
+  margin: auto;
+  text-align: center;
+  position: relative; /* Ensure z-index applies */
+  z-index: 2; /* Ensure content is above background elements */
+}
+
+/* Topics at a Glance Grid */
+.topics-glance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+/* Style the link wrapping the item */
+.topics-glance-grid a {
+  color: inherit; /* Use text color from parent */
+  text-decoration: none; /* Remove underline */
+  display: block; /* Make the whole area clickable */
+  height: 100%; /* Fill the grid cell */
+  transition: transform 0.3s; /* Move hover effect here */
+}
+.topics-glance-grid a:hover {
+   transform: translateY(-5px); /* Apply transform on link hover */
+}
+/* Add focus style to the wrapper link */
+.topics-glance-grid a:focus {
+    outline: none; /* Remove default outline on link */
+}
+.topics-glance-grid a:focus .glance-item {
+  outline: 2px solid var(--accent-color); /* Apply outline to item */
+  outline-offset: 3px;
+  background: rgba(255, 255, 255, 0.1); /* Slight highlight */
+}
+
+.glance-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  height: 100%; /* Ensure item fills the link wrapper */
+  display: flex; /* Use flex for better internal alignment */
+  flex-direction: column;
+  justify-content: flex-start; /* Align content to top */
+}
+
+.glance-icon {
+  margin-bottom: 1rem;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  /* Ensure SVG inside uses text color */
+  color: var(--text-color);
+  opacity: 0.7; /* Slightly dim icon */
+}
+.glance-icon svg {
+    width: 64px; /* Ensure consistent size */
+    height: 64px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+/* Fix specific icon colors/strokes if needed */
+.glance-item svg path[data-fill="none"] {
+  fill: none;
+}
+.glance-item svg path[stroke-width] {
+  stroke-width: 3; /* Adjust as needed */
+}
+/* Override specific glance icon colors if they clash */
+.glance-item svg path[stroke="#9999e5"] { stroke: var(--secondary-accent); }
+.glance-item svg path[stroke="#88d3f3"] { stroke: var(--accent-color); }
+.glance-item svg [fill="#9999e5"] { fill: var(--secondary-accent); opacity: 0.2; }
+.glance-item svg [fill="#88d3f3"] { fill: var(--accent-color); opacity: 0.2; }
+
+
+.glance-item h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+.glance-item p {
+  font-size: 1rem;
+  line-height: 1.6; /* Match body line-height for consistency */
+}
+
+
+/* Section Shapes and Floating Objects */
+.section-shapes, .symbol-container, .floating-objects {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;  /* Ensure these do not block links */
+  z-index: 1; /* Behind content (z-index: 2) */
+}
+
+/* Keyframes for floating animation */
+@keyframes float {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(10deg); } /* Reduced rotation */
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes floatAlternate { /* For variety */
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(-5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+
+/* General Floating Objects (Site Wide - includes the 8 new ones) */
+.floating-object {
+  position: absolute;
+  width: 50px; /* Slightly smaller default size */
+  height: 50px;
+  color: var(--text-color); /* Use text color for better visibility */
+  opacity: 0.2; /* Adjusted opacity */
+  animation: floatAlternate 12s ease-in-out infinite; /* Slightly slower animation */
+}
+.floating-object svg {
+    fill: currentColor;
+    stroke: currentColor;
+    vector-effect: non-scaling-stroke;
+}
+/* Handle specific SVG attributes within general floating objects */
+.floating-object svg *[data-fill="none"] {
+    fill: none;
+}
+.floating-object svg *[data-stroke="true"] {
+    stroke-width: 2; /* Default stroke width */
+}
+.floating-object svg *[stroke-linecap] {
+    stroke-linecap: round;
+}
+.floating-object svg *[stroke-dasharray] {
+    stroke-dasharray: 4, 4; /* Example dash array */
+}
+/* Individual delays will be set inline */
+
+
+/* Hero Section Specific Symbols Styling (Original 8) */
+.hero .symbol-container .symbol {
+    position: absolute;
+    color: var(--text-color); /* Set base color for children */
+    opacity: 0.3; /* Default opacity for hero symbols */
+    animation: float 10s ease-in-out infinite alternate; /* Apply floating */
+    width: 60px; /* Default size */
+    height: 60px;
+}
+/* Ensure children inherit color and handle overrides */
+.hero .symbol-container .symbol svg,
+.hero .symbol-container .symbol circle,
+.hero .symbol-container .symbol rect,
+.hero .symbol-container .symbol path,
+.hero .symbol-container .symbol line {
+    fill: currentColor;
+    stroke: currentColor;
+    vector-effect: non-scaling-stroke; /* Keep stroke width consistent on scale */
+}
+/* Respect data attributes from HTML */
+.hero .symbol-container .symbol *[data-fill="none"] {
+    fill: none;
+}
+.hero .symbol-container .symbol *[data-stroke="true"] {
+    /* Stroke is already currentColor, set width */
+    stroke-width: 2; /* Default */
+}
+/* Symbol specific stroke widths */
+.hero .symbol-container .dna path,
+.hero .symbol-container .seedling path {
+    stroke-width: 3;
+}
+.hero .symbol-container .atom circle[r="28"],
+.hero .symbol-container .atom circle[r="20"] {
+    stroke-width: 2;
+}
+.hero .symbol-container .dna line {
+    stroke-width: 2;
+}
+.hero .symbol-container .brush path,
+.hero .symbol-container .brush rect {
+    stroke-width: 2;
+}
+.hero .symbol-container .gear path {
+    stroke-width: 1.5; /* Slightly thinner stroke for gear */
+}
+.hero .symbol-container .cloud-symbol path {
+     stroke-width: 2;
+}
+.hero .symbol-container .leaf-symbol path {
+    stroke-width: 2;
+}
+
+
+/* Position Hero Symbols (Original 8) */
+.animated-drone { /* Drone handled separately */
+    width: 80px;
+    height: 80px;
+    position: absolute;
+    top: 20%;
+    left: 80%;
+    transform: translate(-50%, -50%);
+    animation: droneAnimation 8s ease-in-out infinite;
+    color: var(--text-color); /* Base color */
+    opacity: 0.35; /* Slightly more visible */
+}
+/* Drone specific part styling */
+.animated-drone circle[cx="32"][cy="32"][r="30"] {
+    fill: var(--secondary-accent); /* Use muted green for background */
+    fill-opacity: 0.1; /* Keep low opacity */
+    stroke: none;
+}
+.animated-drone circle[r="6"], /* Propellers */
+.animated-drone rect { /* Body */
+    stroke: none; /* No stroke on these parts */
+    fill: currentColor; /* Use parent color */
+}
+
+@keyframes droneAnimation {
+  0% { transform: translate(-50%, -50%) translateY(0px) rotate(0deg); }
+  50% { transform: translate(-50%, -50%) translateY(-15px) rotate(5deg); } /* Subtle movement */
+  100% { transform: translate(-50%, -50%) translateY(0px) rotate(0deg); }
+}
+
+/* Position other hero symbols */
+.hero .symbol-container .atom { top: 30%; left: 15%; animation-delay: 0s; width: 70px; height: 70px;}
+.hero .symbol-container .dna { top: 65%; left: 25%; animation-delay: 1.5s; width: 50px; height: 50px; }
+.hero .symbol-container .seedling { top: 50%; left: 75%; animation-delay: 3s; width: 60px; height: 60px; }
+.hero .symbol-container .gear { top: 80%; left: 10%; animation-delay: 4.5s; width: 55px; height: 55px; }
+.hero .symbol-container .cloud-symbol { top: 15%; left: 40%; animation-delay: 6s; width: 65px; height: 65px; }
+.hero .symbol-container .brush { top: 75%; left: 90%; animation-delay: 7.5s; width: 50px; height: 50px; }
+.hero .symbol-container .leaf-symbol { top: 45%; left: 5%; animation-delay: 9s; width: 55px; height: 55px; }
+
+
+/* Decorative shapes inside sections and hero (Geometry) */
+.geometry .shape {
+  position: absolute;
+  background: var(--accent-color);
+  opacity: 0.07;
+  animation: floatAlternate 12s ease-in-out infinite; /* Use alternate float */
+  z-index: 0; /* Ensure they are behind symbols */
+}
+.geometry .shape.shape-1 {
+  width: 150px; height: 150px; top: 10%; left: 5%; border-radius: 50%; animation-delay: 0s;
+}
+.geometry .shape.shape-2 {
+  width: 200px; height: 200px; top: 50%; left: 80%; animation-delay: 2s; /* No radius = square */
+}
+.geometry .shape.shape-3 {
+  width: 100px; height: 100px; top: 80%; left: 20%; animation-delay: 4s; /* No radius = square */
+}
+
+/* Floating shapes inside sections (Themed icons from content sections) */
+.section-shapes .floating-shape {
+  position: absolute;
+  opacity: 0.14;
+  animation: float 12s ease-in-out infinite;
+  width: 60px; /* Standard size */
+  height: 60px;
+  color: var(--accent-color); /* Base color for these */
+}
+.section-shapes svg {
+    fill: currentColor;
+    stroke: currentColor;
+    vector-effect: non-scaling-stroke;
+}
+.section-shapes svg [fill] { fill: currentColor; } /* Ensure fill uses color */
+.section-shapes svg [stroke] { stroke: currentColor; } /* Ensure stroke uses color */
+.section-shapes svg path[fill-opacity],
+.section-shapes svg circle[fill-opacity],
+.section-shapes svg rect[fill-opacity],
+.section-shapes svg polygon[fill-opacity] {
+    fill: currentColor;
+}
+.section-shapes svg path[stroke-width],
+.section-shapes svg circle[stroke-width],
+.section-shapes svg line[stroke-width] {
+    stroke-width: 1; /* Thin strokes for background elements */
+}
+
+
+/* Positioning for section background shapes */
+.about-icon { top: 15%; left: 5%; animation-delay: 0s; } /* Adjusted positioning */
+.brush-icon { bottom: 15%; right: 5%; animation-delay: 1s;}
+.focus-icon { top: 10%; right: 10%; animation-delay: 2s;}
+.hexagon-icon { bottom: 10%; left: 10%; animation-delay: 3s;}
+.triangle-icon { top: 50%; left: 5%; transform: translateY(-50%); animation-delay: 4s;}
+.planet-icon { top: 10%; left: 50%; transform: translateX(-50%); animation-delay: 0s;}
+.windmill-icon { bottom: 10%; right: 50%; transform: translateX(50%); animation-delay: 1s;}
+.leaf-icon { top: 50%; right: 5%; transform: translateY(-50%); animation-delay: 2s;}
+.cube-icon { top: 10%; left: 50%; transform: translateX(-50%); animation-delay: 0s;}
+.cloud-icon { bottom: 10%; left: 50%; transform: translateX(-50%); animation-delay: 1s;}
+.pyramid-icon { bottom: 10%; right: 50%; transform: translateX(50%); animation-delay: 2s;}
+.ovec-icon { top: 10%; left: 5%; animation-delay: 0s;}
+.orbital-icon { bottom: 10%; right: 5%; animation-delay: 1s;}
+.comet-icon { top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: 2s;}
+.bottom-icon { bottom: 5%; left: 10%; animation-delay: 0s;}
+.star-icon { top: 5%; right: 10%; animation-delay: 1s;}
+.ripple-icon { bottom: 5%; right: 10%; animation-delay: 2s;}
+
+/* OVEC Section Specific Button Styling */
+/* Apply styles to make it match hero buttons */
+#ovec .secondary-btn {
+    margin-top: 1.5rem; /* Space above the button */
+    /* Add styles from .hero-links a that are missing in base .secondary-btn */
+    /* Padding, font-weight, border-radius already added to base .secondary-btn now */
+    /* No extra styles needed here if base .secondary-btn is complete */
+}
+
+
+/* Footer */
+footer {
+  background-color: var(--secondary-bg-color);
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+  margin-top: auto; /* Push footer down if content is short */
+}
+
+/* Ensure body takes at least full viewport height */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+main {
+    flex-grow: 1;
+}

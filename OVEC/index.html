@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Atomic Orbital Vis (Periodic Table) + Extended Features</title>
+
+  <!-- Google Font (Open Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="canvas-container">
+    <!-- Headline -->
+    <div id="headline">Orbital Visualizer for Electron Configurations (OVEC)</div>
+
+    <canvas id="drawing-canvas"></canvas>
+
+    <!-- Distance Scale Panel -->
+    <div id="distance-scale">
+      <div id="scale-bar" style="width: 100px;"></div>
+      <span id="scale-label">? a.u. (? pm)</span>
+    </div>
+
+    <!-- Loading Overlay with Atomic Animation -->
+    <div id="loading-overlay">
+      <div class="atom-loader">
+        <div class="nucleus"></div>
+        <!-- electron divs added dynamically -->
+      </div>
+      <div id="loading-message">Loading...</div>
+    </div>
+  </div>
+
+  <div id="controls">
+
+    <!-- Atom Configuration & Settings -->
+    <details id="config-wrapper" open>
+      <summary><h4>Atom Configuration & Settings</h4></summary>
+      <div class="wrapper-content">
+
+        <!-- 1) Periodic Table & Isotope -->
+        <details class="sub-section" id="periodic-table-section" open>
+          <summary><h5>Select Element from Table</h5></summary>
+          <div id="periodic-table-container">
+            <div id="periodic-table"></div>
+          </div>
+          <!-- New: Isotope dropdown -->
+          <div class="control-group" style="margin-top: 8px;">
+            <label for="isotope-select" style="width:auto;">Select Isotope:</label>
+            <select id="isotope-select" style="max-width:200px;">
+              <option value="">No data</option>
+            </select>
+          </div>
+        </details>
+
+        <!-- 2) Manual Selection -->
+        <details class="sub-section" id="manual-selection-section">
+          <summary><h5>Select Element Manually</h5></summary>
+          <div class="control-group">
+            <div>
+              <label for="protons">Atomic # (Z):</label>
+              <button id="proton-minus">-</button>
+              <input type="number" id="protons" value="6" min="1" max="118">
+              <button id="proton-plus">+</button>
+              <span id="element-display">(C) Carbon</span>
+            </div>
+            <div>
+              <label for="electrons">Electrons:</label>
+              <input type="number" id="electrons" value="6" min="0">
+              <small>(Defaults to Z for neutral)</small>
+            </div>
+            <div>
+              <label for="neutrons">Neutrons:</label>
+              <input type="number" id="neutrons" value="6" min="0">
+              <small>(Set manually, or choose from isotope dropdown)</small>
+            </div>
+          </div>
+        </details>
+
+        <!-- 3) Visualization Settings -->
+        <details class="sub-section">
+          <summary><h5>Visualization Settings</h5></summary>
+          <div class="control-group">
+            <div>
+              <label for="points">Points/Orbital:</label>
+              <input type="number" id="points" value="20000" min="100" max="1000000" step="100">
+              <small id="points-warning" style="color: orange;"></small>
+            </div>
+            <div>
+              <label for="pointSize">Base Size:</label>
+              <input type="number" id="pointSize" value="1.0" min="0.1" max="50" step="0.1">
+              <small>(Base pixel size)</small>
+            </div>
+            <div>
+              <label for="minPointSizeFactor">Min Size Factor:</label>
+              <input type="number" id="minPointSizeFactor" value="0.4" min="0.01" max="5.0" step="0.01">
+              <small>(Near core mult.)</small>
+            </div>
+            <div>
+              <label for="maxPointSizeFactor">Max Size Factor:</label>
+              <input type="number" id="maxPointSizeFactor" value="1.0" min="0.01" max="5.0" step="0.01">
+              <small>(Far core mult.)</small>
+            </div>
+            <div>
+              <label for="opacity">Base Opacity:</label>
+              <input type="number" id="opacity" value="0.97" min="0.01" max="1.0" step="0.01">
+              <small>(Max opacity)</small>
+            </div>
+            <div style="margin-top: 10px;">
+              <label for="show-nucleus" style="width: auto; margin-bottom: 0;">
+                <input type="checkbox" id="show-nucleus" checked> Show Nucleus
+              </label>
+            </div>
+            <div>
+              <label for="nucleus-size-slider">Nucleus Radius:</label>
+              <input type="range" id="nucleus-size-slider" min="0.05" max="1.5" step="0.01" value="0.05" style="width:130px; vertical-align:middle;">
+              <span id="nucleus-size-value" style="font-size:0.8em; margin-left:5px;">0.05</span>
+              <small>(Controls bounding radius)</small>
+            </div>
+            <div style="margin-top:10px;">
+              <label for="light-distance-slider">Opacity Falloff:</label>
+              <input type="range" id="light-distance-slider" min="0" max="200" step="1" value="50" style="width:130px; vertical-align:middle;">
+              <span id="light-distance-value" style="font-size:0.8em; margin-left:5px;">50</span>
+              <small>(Opacity reduction with distance. 0=none)</small>
+            </div>
+          </div>
+        </details>
+
+        <!-- 4) Orbit Calculation -->
+        <details class="sub-section">
+          <summary><h5>Orbit Calculation</h5></summary>
+          <div class="control-group">
+            <div class="checkbox-group" style="margin-bottom:15px;">
+              <label style="width:auto"><input type="checkbox" id="enable_s" checked> s</label>
+              <label style="width:auto"><input type="checkbox" id="enable_p" checked> p</label>
+              <label style="width:auto"><input type="checkbox" id="enable_d" checked> d</label>
+              <label style="width:auto"><input type="checkbox" id="enable_f" checked> f</label>
+            </div>
+            <div class="single-orbit-section">
+              <label for="single-orbit-only" style="width:auto; display:inline-block; margin-right:10px;">
+                <input type="checkbox" id="single-orbit-only"> Single Orbit Only
+              </label>
+              <select id="single-orbit-select" style="display:none; max-width: calc(100% - 150px); vertical-align:middle;"></select>
+              <small style="display:block; margin-top:5px; margin-left:0;">
+                (If checked, visualize only the selected orbital using the full point budget.)
+              </small>
+            </div>
+          </div>
+        </details>
+
+        <button id="update-button">Visualize Atom</button>
+        <button id="toggle-draw-button">Enable Drawing</button>
+
+      </div>
+    </details>
+
+    <!-- Atom & Orbital Info -->
+    <details id="info-wrapper" open>
+      <summary><h4>Atom & Orbital Info</h4></summary>
+      <div class="wrapper-content">
+
+        <div id="info">
+
+          <details class="sub-section" open>
+            <summary><h5>Atom Details</h5></summary>
+            <div id="atom-details"></div>
+          </details>
+
+          <details class="sub-section" open>
+            <summary><h5>Electron Configuration</h5></summary>
+            <div id="config-display"></div>
+          </details>
+
+          <details class="sub-section" open>
+            <summary>
+              <h5>Occupied Orbitals</h5>
+              <button id="orbital-popup-button" title="Show Larger Orbitals Popup">Show Occupied Orbitals (☰)</button>
+            </summary>
+            <div id="orbital-visibility-controls">
+              <button id="select-all-orbitals">Show All</button>
+              <button id="deselect-all-orbitals">Hide All</button>
+              <button id="refresh-points-button" title="Refresh points for visible orbitals (distributes total points)">&#8635;</button>
+            </div>
+            <div id="orbital-details" style="max-height: 500px; overflow-y:auto; border:1px solid #eee; margin-top:5px;"></div>
+          </details>
+
+          <details class="sub-section">
+            <summary><h5>Wave Function Model</h5></summary>
+            <div id="wavefunction-display">
+              <p style="font-size:0.9em;">
+                This visualization uses hydrogen-like wavefunctions, with an effective nuclear charge (Z<sub>eff</sub>) for multi-electron atoms.
+                The radial part is generated from Laguerre polynomials and exponential factors, while angular parts come from real
+                spherical harmonics (s, p, d, f).
+              </p>
+              <p style="font-size:0.9em;">
+                We apply simplified Slater's rules to estimate Z<sub>eff</sub> for each orbital. Probability clouds are sampled via
+                rejection sampling of the radial density |R(r)|² and the angular distribution |Y<sub>l,m</sub>(θ,φ)|².
+              </p>
+            </div>
+          </details>
+
+          <details class="sub-section">
+            <summary><h5>Atom Information Help</h5></summary>
+            <div id="atom-info-doc">
+              <ul style="font-size:0.9em; margin:0; padding-left:20px;">
+                <li><strong>Protons (Z):</strong> The atomic number determines the element identity.</li>
+                <li><strong>Electrons:</strong> Setting this higher or lower than Z results in ions.</li>
+                <li><strong>Neutrons:</strong> For isotopes; does not affect the orbitals themselves in this model, only the nucleus illustration.</li>
+              </ul>
+              <p style="font-size:0.9em; margin-top:0.8em;">
+                The table lets you pick an element quickly. Alternatively, adjust inputs to explore hypothetical scenarios.
+              </p>
+            </div>
+          </details>
+
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary><h4>Notes & Limitations</h4></summary>
+      <p class="note">
+        This tool uses approximations and a simplified hydrogenic approach. Real multi-electron atoms have electron-electron
+        interactions that significantly modify orbital shapes. Slater's rules are a rough model for shielding.  
+        Also note that computational performance can degrade at high point counts.
+      </p>
+      <p class="note">
+        This code has been partially generated with the assistance of an LLM.<br>
+        <a href="projectOverview.html" target="_blank">Project Overview</a>
+      </p><!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <title>Atomic Orbital Vis (Periodic Table) + Extended Features</title>
+      
+        <!-- Google Font (Open Sans) -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+        
+        <link rel="stylesheet" href="css/style.css">
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+      </head>
+      <body>
+        <div id="canvas-container">
+          <!-- Headline -->
+          <div id="headline">Orbital Visualizer for Electron Configurations (OVEC)</div>
+      
+          <canvas id="drawing-canvas"></canvas>
+      
+          <!-- Distance Scale -->
+          <div id="distance-scale">
+            <div id="scale-bar" style="width: 100px;"></div>
+            <span id="scale-label">? a.u. (? pm)</span>
+          </div>
+      
+          <!-- Loading Overlay -->
+          <div id="loading-overlay">
+            <div class="atom-loader">
+              <div class="nucleus"></div>
+              <!-- electrons appended dynamically -->
+            </div>
+            <div id="loading-message">Loading...</div>
+          </div>
+        </div>
+      
+        <div id="controls">
+      
+          <!-- Atom Configuration & Settings -->
+          <details id="config-wrapper" open>
+            <summary><h4>Atom Configuration & Settings</h4></summary>
+            <div class="wrapper-content">
+      
+              <!-- 1) Periodic Table & Isotopes -->
+              <details class="sub-section" id="periodic-table-section" open>
+                <summary><h5>Select Element from Table</h5></summary>
+                <div id="periodic-table-container">
+                  <div id="periodic-table"></div>
+                </div>
+                <!-- Isotope dropdown -->
+                <div class="control-group" style="margin-top: 8px;">
+                  <label for="isotope-select" style="width:auto;">Select Isotope:</label>
+                  <select id="isotope-select" style="max-width:200px;">
+                    <option value="">No data</option>
+                  </select>
+                </div>
+      
+                <!-- Moved “Points/Orbital” and “Opacity Falloff” here for quick access -->
+                <div class="control-group" style="margin-top: 8px;">
+                  <div>
+                    <label for="points">Points/Orbital:</label>
+                    <input type="number" id="points" value="20000" min="100" max="1000000" step="100">
+                    <small id="points-warning" style="color: orange;"></small>
+                  </div>
+                  <div style="margin-top:8px;">
+                    <label for="light-distance-slider">Opacity Falloff:</label>
+                    <input type="range" id="light-distance-slider" min="0" max="200" step="1" value="50" style="width:130px; vertical-align:middle;">
+                    <span id="light-distance-value" style="font-size:0.8em; margin-left:5px;">50</span>
+                    <small>(Reduce points opacity by distance)</small>
+                  </div>
+                </div>
+              </details>
+      
+              <!-- 2) Manual Selection -->
+              <details class="sub-section" id="manual-selection-section">
+                <summary><h5>Select Element Manually</h5></summary>
+                <div class="control-group">
+                  <div>
+                    <label for="protons">Atomic # (Z):</label>
+                    <button id="proton-minus">-</button>
+                    <input type="number" id="protons" value="6" min="1" max="118">
+                    <button id="proton-plus">+</button>
+                    <span id="element-display">(C) Carbon</span>
+                  </div>
+                  <div>
+                    <label for="electrons">Electrons:</label>
+                    <input type="number" id="electrons" value="6" min="0">
+                    <small>(Defaults to Z for neutral)</small>
+                  </div>
+                  <div>
+                    <label for="neutrons">Neutrons:</label>
+                    <input type="number" id="neutrons" value="6" min="0">
+                    <small>(Or pick from isotope dropdown)</small>
+                  </div>
+                </div>
+              </details>
+      
+              <!-- 3) Visualization Settings (trimmed) -->
+              <details class="sub-section">
+                <summary><h5>Visualization Settings</h5></summary>
+                <div class="control-group">
+                  <div>
+                    <label for="pointSize">Base Size:</label>
+                    <input type="number" id="pointSize" value="1.0" min="0.1" max="50" step="0.1">
+                    <small>(Pixel size for points)</small>
+                  </div>
+                  <div>
+                    <label for="minPointSizeFactor">Min Size Factor:</label>
+                    <input type="number" id="minPointSizeFactor" value="0.4" min="0.01" max="5.0" step="0.01">
+                    <small>(Near core multiplier)</small>
+                  </div>
+                  <div>
+                    <label for="maxPointSizeFactor">Max Size Factor:</label>
+                    <input type="number" id="maxPointSizeFactor" value="1.0" min="0.01" max="5.0" step="0.01">
+                    <small>(Far region multiplier)</small>
+                  </div>
+                  <div>
+                    <label for="opacity">Base Opacity:</label>
+                    <input type="number" id="opacity" value="0.97" min="0.01" max="1.0" step="0.01">
+                    <small>(Max point opacity)</small>
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <label for="show-nucleus" style="width:auto; margin-bottom:0;">
+                      <input type="checkbox" id="show-nucleus" checked> Show Nucleus
+                    </label>
+                  </div>
+                  <div>
+                    <label for="nucleus-size-slider">Nucleus Radius:</label>
+                    <input type="range" id="nucleus-size-slider" min="0.05" max="1.5" step="0.01" value="0.05" style="width:130px; vertical-align:middle;">
+                    <span id="nucleus-size-value" style="font-size:0.8em; margin-left:5px;">0.05</span>
+                    <small>(Bounding radius in 3D)</small>
+                  </div>
+                </div>
+              </details>
+      
+              <!-- 4) Orbit Calculation -->
+              <details class="sub-section">
+                <summary><h5>Orbit Calculation</h5></summary>
+                <div class="control-group">
+                  <div class="checkbox-group" style="margin-bottom:15px;">
+                    <label style="width:auto"><input type="checkbox" id="enable_s" checked> s</label>
+                    <label style="width:auto"><input type="checkbox" id="enable_p" checked> p</label>
+                    <label style="width:auto"><input type="checkbox" id="enable_d" checked> d</label>
+                    <label style="width:auto"><input type="checkbox" id="enable_f" checked> f</label>
+                  </div>
+                  <div class="single-orbit-section">
+                    <label for="single-orbit-only" style="width:auto; display:inline-block; margin-right:10px;">
+                      <input type="checkbox" id="single-orbit-only"> Single Orbit Only
+                    </label>
+                    <select id="single-orbit-select" style="display:none; max-width: calc(100% - 150px); vertical-align:middle;"></select>
+                    <small style="display:block; margin-top:5px; margin-left:0;">
+                      (If checked, only visualize that one orbital using full point budget.)
+                    </small>
+                  </div>
+                </div>
+              </details>
+      
+              <button id="update-button">Visualize Atom</button>
+              <button id="toggle-draw-button">Enable Drawing</button>
+      
+            </div>
+          </details>
+      
+          <!-- Atom & Orbital Info -->
+          <details id="info-wrapper" open>
+            <summary><h4>Atom & Orbital Info</h4></summary>
+            <div class="wrapper-content">
+      
+              <div id="info">
+      
+                <details class="sub-section" open>
+                  <summary><h5>Atom Details</h5></summary>
+                  <div id="atom-details"></div>
+                </details>
+      
+                <details class="sub-section" open>
+                  <summary><h5>Electron Configuration</h5></summary>
+                  <div id="config-display"></div>
+                </details>
+      
+                <details class="sub-section" open>
+                  <summary>
+                    <h5>Occupied Orbitals</h5>
+                    <button id="orbital-popup-button" title="Show Larger Orbitals Popup">Show Occupied Orbitals (☰)</button>
+                  </summary>
+                  <div id="orbital-visibility-controls">
+                    <button id="select-all-orbitals">Show All</button>
+                    <button id="deselect-all-orbitals">Hide All</button>
+                    <button id="refresh-points-button" title="Refresh points for visible orbitals">&#8635;</button>
+                  </div>
+                  <div id="orbital-details" style="max-height:500px; overflow-y:auto; border:1px solid #eee; margin-top:5px;"></div>
+                </details>
+      
+                <details class="sub-section">
+                  <summary><h5>Wave Function Model</h5></summary>
+                  <div id="wavefunction-display">
+                    <p style="font-size:0.9em;">
+                      This visualization uses hydrogen-like wavefunctions, with an effective nuclear charge (Z<sub>eff</sub>) for multi-electron atoms.
+                      The radial part is generated from Laguerre polynomials and exponential factors, while angular parts come from real
+                      spherical harmonics (s, p, d, f).
+                    </p>
+                    <p style="font-size:0.9em;">
+                      We apply simplified Slater's rules to estimate Z<sub>eff</sub> for each orbital. Probability clouds are sampled via
+                      rejection sampling of the radial density |R(r)|² and the angular distribution |Y<sub>l,m</sub>(θ,φ)|².
+                    </p>
+                  </div>
+                </details>
+      
+                <details class="sub-section">
+                  <summary><h5>Atom Information Help</h5></summary>
+                  <div id="atom-info-doc">
+                    <ul style="font-size:0.9em; margin:0; padding-left:20px;">
+                      <li><strong>Protons (Z):</strong> The atomic number determines the element identity.</li>
+                      <li><strong>Electrons:</strong> Setting this higher or lower than Z results in ions.</li>
+                      <li><strong>Neutrons:</strong> For isotopes; does not affect the orbitals themselves in this model, only the nucleus illustration.</li>
+                    </ul>
+                    <p style="font-size:0.9em; margin-top:0.8em;">
+                      The table lets you pick an element quickly. Or adjust inputs to explore hypothetical scenarios.
+                    </p>
+                  </div>
+                </details>
+      
+              </div>
+            </div>
+          </details>
+      
+          <details>
+            <summary><h4>Notes & Limitations</h4></summary>
+            <p class="note">
+              This tool uses approximations and a simplified hydrogenic approach. Real multi-electron atoms have electron-electron
+              interactions that significantly modify orbital shapes. Slater's rules are a rough model for shielding.
+              Also note that computational performance can degrade at high point counts.
+            </p>
+            <p class="note">
+              This code has been partially generated with the assistance of an LLM.<br>
+              <a href="projectOverview.html" target="_blank">Project Overview</a>
+            </p>
+          </details>
+      
+          <!-- Popup for bigger orbitals -->
+          <div id="orbital-popup-overlay" class="hidden">
+            <div id="orbital-popup">
+              <button id="orbital-popup-close">X</button>
+      
+              <div style="margin-top: 5px;">
+                <label for="popupWidthSlider" style="display:inline-block; width:100px;">Canvas Width:</label>
+                <input type="range" id="popupWidthSlider" min="100" max="800" step="50" value="600">
+                <span id="popupWidthValue">600</span>
+              </div>
+              <div style="margin-top: 5px;">
+                <label for="popupHeightSlider" style="display:inline-block; width:100px;">Canvas Height:</label>
+                <input type="range" id="popupHeightSlider" min="80" max="400" step="20" value="300">
+                <span id="popupHeightValue">300</span>
+              </div>
+      
+              <div id="orbital-popup-content"></div>
+            </div>
+          </div>
+      
+        </div>
+      
+        <div id="copyright">
+          Authors Philip Siemer &amp; Damian Stenzel
+        </div>
+      
+        <!-- Scripts -->
+        <script src="js/isotopeData.js"></script>
+        <script src="js/periodicTableData.js"></script>
+        <script src="js/orbitalCalculations.js"></script>
+        <script src="js/threeSetup.js"></script>
+        <script src="js/ui.js"></script>
+        <script src="js/main.js"></script>
+      
+      </body>
+      </html>
+      
+    </details>
+
+    <!-- Popup overlay with separate bigger-lab canvases for each orbital. -->
+    <div id="orbital-popup-overlay" class="hidden">
+      <div id="orbital-popup">
+        <button id="orbital-popup-close">X</button>
+
+        <!-- Larger defaults, user can re-scale -->
+        <div style="margin-top: 5px;">
+          <label for="popupWidthSlider" style="display:inline-block; width: 100px;">Canvas Width:</label>
+          <input type="range" id="popupWidthSlider" min="100" max="800" step="50" value="600">
+          <span id="popupWidthValue">600</span>
+        </div>
+        <div style="margin-top: 5px;">
+          <label for="popupHeightSlider" style="display:inline-block; width: 100px;">Canvas Height:</label>
+          <input type="range" id="popupHeightSlider" min="80" max="400" step="20" value="300">
+          <span id="popupHeightValue">300</span>
+        </div>
+
+        <div id="orbital-popup-content"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div id="copyright">
+    Authors Philip Siemer &amp; Damian Stenzel
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/isotopeData.js"></script>
+  <script src="js/periodicTableData.js"></script>
+  <script src="js/orbitalCalculations.js"></script>
+  <script src="js/threeSetup.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- OPTIONAL Worker approach: 
+       <script src="js/orbitalWorker.js" type="text/javascript"></script>
+  -->
+</body>
+</html>

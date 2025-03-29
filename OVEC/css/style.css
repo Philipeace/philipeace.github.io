@@ -1,0 +1,553 @@
+/* Base & Layout */
+html {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  *, *::before, *::after {
+    box-sizing: inherit;
+  }
+  body {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Open Sans', Arial, sans-serif;
+    background-color: #f0f0f0;
+    overflow: hidden;
+  }
+  
+  #canvas-container {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
+    height: 100%;
+    position: relative;
+    background-color: #000;
+    overflow: hidden;
+  }
+  
+  /* increased from 420px -> 460px to avoid horizontal scroll for the table */
+  #controls {
+    width: 460px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    height: 100%;
+    padding: 10px;
+    overflow-y: auto;
+    border-left: 1px solid #ccc;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Headline */
+  #headline {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1em;
+    font-weight: bold;
+    z-index: 20;
+    pointer-events: none;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  }
+  
+  canvas#three-canvas,
+  canvas#drawing-canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  canvas#drawing-canvas {
+    z-index: 10;
+    pointer-events: none;
+  }
+  
+  /* Collapsibles, sub-sections, etc. unchanged from prior versions... */
+  details > summary {
+    cursor: pointer;
+    font-weight: bold;
+    list-style: none;
+    position: relative;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::marker { display: none; }
+  details > summary::before {
+    content: '►';
+    position: absolute;
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg);
+    font-size: 0.8em;
+    transition: transform 0.2s ease-in-out;
+  }
+  details[open] > summary::before {
+    transform: translateY(-50%) rotate(90deg);
+  }
+  #controls > details:not(#config-wrapper) > summary {
+    padding: 6px 0 6px 20px;
+    margin-bottom: 5px;
+  }
+  #controls > details:not(#config-wrapper) > summary > h4 {
+    font-size: 1.05em;
+    display: inline; margin:0; vertical-align: middle;
+  }
+  
+  /* etc. We'll skip re-listing every detail rule for brevity */
+  
+  .sub-section {
+    border-bottom: none !important;
+    margin-bottom: 5px !important;
+    padding-bottom: 0 !important;
+  }
+  .sub-section > summary {
+    padding: 4px 0 4px 25px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sub-section[open] > summary {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+  .sub-section > summary > h5 {
+    font-size: 0.95em;
+    font-weight: normal;
+    display: inline; margin:0; vertical-align: middle;
+  }
+  .sub-section > div {
+    margin-left: 15px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  
+  /* config wrapper, info wrapper styles etc. are the same */
+  #config-wrapper > .wrapper-content {
+    margin-left: 15px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  
+  /* Control groups, checkboxes, etc. are the same as before. 
+     We'll omit them for brevity, no big changes except #controls width = 460.
+  */
+  
+  /* Periodic table at 2px gap, or same as before. 
+     Should now fit better horizontally.
+  */
+  
+  /* Loading overlay, atom loader, etc. the same.
+     We'll keep everything else as-is.
+  */
+  
+  
+  
+  /* Control Groups & Inputs */
+  .control-group > div {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .control-group > div:last-child {
+    margin-bottom: 0;
+  }
+  .control-group label {
+    width: 120px;
+    font-size: 0.9em;
+    vertical-align: middle;
+    margin-right: 5px;
+    flex-shrink: 0;
+  }
+  .control-group label[for$="-checkbox"],
+  .control-group label[style*="width: auto"] {
+    width: auto;
+    margin-right: 10px;
+  }
+  .control-group input[type="number"],
+  .control-group input[type="range"],
+  .control-group select,
+  .control-group button {
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .control-group input[type="number"] {
+    width: 65px;
+    padding: 4px;
+  }
+  .control-group button {
+    margin: 0 5px 0 0;
+  }
+  .control-group small {
+    display: block;
+    font-size: 0.85em;
+    color: #555;
+    margin-top: 2px;
+    margin-left: 125px;
+    width: calc(100% - 125px);
+  }
+  .single-orbit-section small,
+  .control-group div[style*="margin-top: 10px"] + div small {
+    margin-left: 0;
+    width: 100%;
+  }
+  #points-warning {
+    margin-left: 125px;
+    margin-top: 0;
+    margin-bottom: -5px;
+  }
+  
+  /* orbit calculation layout */
+  .checkbox-group {
+    margin-bottom: 15px !important;
+    margin-left: 0;
+    padding-left: 0;
+  }
+  .checkbox-group label {
+    margin-right: 15px;
+  }
+  #single-orbit-select {
+    max-width: 180px;
+  }
+  
+  /* Orbital List Items */
+  #orbital-visibility-controls {
+    margin-top: 5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  #orbital-visibility-controls button {
+    padding: 4px 8px;
+    font-size: 0.85em;
+  }
+  #refresh-points-button {
+    font-size: 1.1em;
+    padding: 2px 6px;
+    line-height: 1;
+  }
+  .orbital-list-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+    min-height: 44px;
+    padding: 2px 0;
+    border-bottom: 1px solid #f8f8f8;
+  }
+  .orbital-list-item:last-child {
+    border-bottom: none;
+  }
+  .orbital-list-item input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .orbital-list-item .color-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 5px;
+    border: 1px solid #aaa;
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+  .orbital-list-item .label-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    margin-right: 5px;
+    justify-content: center;
+  }
+  .orbital-list-item label {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    display: block;
+  }
+  .orbital-list-item small {
+    display: block;
+    font-size: 0.85em;
+    color: #555;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .orbital-list-item .inline-plot-canvas {
+    width: 80px;
+    height: 40px;
+    border: 1px solid #eee;
+    background-color: #fdfdfd;
+    margin-left: auto;
+    margin-right: 5px;
+    flex-shrink: 0;
+  }
+  .orbital-list-item input[type="color"] {
+    margin-left: 5px;
+    cursor: pointer;
+    width: 25px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid #ccc;
+    flex-shrink: 0;
+  }
+  .orbital-list-item.inactive {
+    opacity: 0.5;
+  }
+  .orbital-list-item.inactive label,
+  .orbital-list-item.inactive small {
+    text-decoration: line-through;
+  }
+  
+  /* Notes, etc. */
+  .note {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    line-height: 1.4;
+  }
+  
+  /* Distance Scale */
+  #distance-scale {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 20;
+  }
+  #scale-bar {
+    height: 2px;
+    background-color: white;
+    margin-bottom: 3px;
+    transition: width 0.1s ease-out;
+  }
+  #scale-label {
+    white-space: nowrap;
+  }
+  
+  /* Periodic Table layout */
+  #periodic-table-container {
+    padding-top: 5px;
+  }
+  #periodic-table {
+    display: grid;
+    grid-template-columns: repeat(18, minmax(20px, 1fr));
+    grid-auto-rows: minmax(20px, auto);
+    gap: 2px;
+    max-width: 100%;
+  }
+  .element {
+    border: 1px solid #ccc;
+    font-size: 0.65em;
+    text-align: center;
+    cursor: pointer;
+    padding: 1px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    line-height: 1.1;
+    min-height: 25px;
+    background-color: #f9f9f9;
+  }
+  .element:hover {
+    border-color: #007bff;
+    background-color: #eef;
+  }
+  .element.selected {
+    border-color: #ff0000;
+    background-color: #fdd;
+    font-weight: bold;
+  }
+  .element span:first-child {
+    font-size: 0.8em;
+    display: block;
+  }
+  .element span:last-child {
+    font-weight: bold;
+    display: block;
+  }
+  .lanthanide {
+    background-color: #efffed;
+  }
+  .actinide {
+    background-color: #fceffc;
+  }
+  
+  /* Loading Overlay with Atomic Animation */
+  #loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 100;
+    text-align: center;
+  }
+  #loading-overlay.visible {
+    display: flex;
+  }
+  #loading-message {
+    margin-top: 20px;
+    font-size: 1.1em;
+  }
+  .atom-loader {
+    position: relative;
+    width: 60px;
+    height: 60px;
+  }
+  .atom-loader .nucleus {
+    width: 10px;
+    height: 10px;
+    background-color: #ffcc00;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .atom-loader .electron {
+    width: 6px;
+    height: 6px;
+    background-color: #66ccff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -3px;
+    animation: orbit 1.5s linear infinite;
+  }
+  @keyframes orbit {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg) translateX(25px) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(360deg) translateX(25px) rotate(-360deg);
+    }
+  }
+  @keyframes orbit-reverse {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg) translateX(20px) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(-360deg) translateX(20px) rotate(360deg);
+    }
+  }
+  @keyframes orbit-angled {
+    from {
+      transform: translate(-50%, -50%) rotate(45deg) translateX(30px) rotate(-45deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(405deg) translateX(30px) rotate(-405deg);
+    }
+  }
+  
+  /* Popup Overlay */
+  #orbital-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hidden {
+    display: none !important;
+  }
+  #orbital-popup {
+    background: #fff;
+    padding: 10px;
+    width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 3px;
+    position: relative;
+  }
+  #orbital-popup button#orbital-popup-close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    border: none;
+    background: #ccc;
+    color: #333;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 3px;
+  }
+  #orbital-popup-content {
+    margin-top: 25px;
+  }
+  #popupWidthSlider,
+  #popupHeightSlider {
+    vertical-align: middle;
+    width: 250px;
+  }
+  #popupWidthValue,
+  #popupHeightValue {
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+  }
+  
+  /* Larger canvases in the popup, user can see them scaled */
+  .popup-orbital-item {
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+  .popup-orbital-canvas {
+    /* We'll set style dynamically in ui.js, e.g. style.width / style.height */
+    border: 1px solid #ddd;
+    background-color: #fefefe;
+  }
+  .popup-orbital-label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  /* Footer */
+  #copyright {
+    position: fixed;
+    bottom: 5px;
+    right: 5px;
+    font-size: 10px;
+    color: #666;
+    z-index: 50;
+    text-align: right;
+  }
+  

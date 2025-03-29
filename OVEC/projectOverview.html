@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project Overview - OVEC</title>
+  <meta name="description" content="Detailed overview of the Orbital Visualizer for Electron Configurations (OVEC), with atomic physical styling and advanced usecases.">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: "Open Sans", Arial, sans-serif;
+      /* Radial gradient reminiscent of an "atomic swirl" */
+      background: radial-gradient(circle at 50% 50%, #ecefff, #f6f6f6, #ffffff);
+      color: #333;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: rgba(255,255,255,0.85);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-radius: 8px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1em;
+    }
+    header img {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+      animation: spin 2.5s linear infinite; /* Just an example rotation animation */
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    h1, h2, h3 {
+      margin-top: 1.4em;
+      margin-bottom: 0.5em;
+      font-weight: normal;
+      color: #222;
+    }
+    h1 {
+      font-size: 1.6em;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 0.4em;
+      margin-bottom: 0.8em;
+    }
+    h2 {
+      font-size: 1.3em;
+      color: #007bff;
+    }
+    h3 {
+      font-size: 1.1em;
+      color: #007bff;
+    }
+    p, ul {
+      margin-bottom: 0.8em;
+      line-height: 1.6;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    ul li {
+      margin-bottom: 0.4em;
+      transition: background-color 0.2s ease;
+    }
+    ul li:hover {
+      background-color: #eef;
+    }
+    .highlighted {
+      background-color: #d0e0ff;
+      padding: 8px;
+      border-left: 4px solid #007bff;
+      margin: 1em 0;
+    }
+    footer {
+      margin-top: 1.5em;
+      font-size: 0.85em;
+      color: #555;
+      border-top: 1px solid #ccc;
+      padding-top: 1em;
+    }
+    a.ovec-link {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a.ovec-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<main>
+
+  <header>
+    <!-- Replaced the placeholder with a small rotating hydrogen GIF; example link from giphy -->
+    <a href="index.html" class="ovec-link">
+      <img src="https://media.giphy.com/media/NFA61GS9qKZ68/giphy.gif" alt="Rotating Hydrogen" />
+    </a>
+    <h1 style="margin:0; font-weight:bold;">Project Overview: Orbital Visualizer for Electron Configurations (OVEC)</h1>
+  </header>
+
+  <p>
+    Welcome to the <strong>OVEC (Orbital Visualizer for Electron Configurations)</strong> project. This platform is
+    designed with an <em>atomic physical styling</em>, highlighting quantum-mechanical features of electrons in atoms.
+    The overall aesthetic aims to provide a gentle, educational vibe while still showcasing the complexity of wavefunctions.
+  </p>
+
+  <h2>Purpose and Goals</h2>
+  <p>
+    The main goal of OVEC is to provide an interactive way to explore electron orbitals for various elements (up to Z=118).
+    By integrating a user-friendly <strong>periodic table</strong>, wavefunction sampling, and real-time 3D rendering, we
+    aim to educate and delight students, researchers, and science enthusiasts in the field of atomic physics.
+  </p>
+
+  <h2>Key Features</h2>
+  <ul>
+    <li><strong>Periodic Table Integration:</strong> Quickly pick elements and auto-set protons/neutrons (with potential isotope support).</li>
+    <li><strong>Configurable Electron Count:</strong> Explore ions or excited states by altering electron counts beyond neutrality.</li>
+    <li><strong>Atomic Physical Style:</strong> Real spherical harmonics, simplified Slater-based Z<sub>eff</sub>, radial wavefunction sampling.</li>
+    <li><strong>3D Visualization:</strong> Large point clouds using Three.js, with luminous additive blending for striking orbital shapes.</li>
+    <li><strong>Radial Plot Animations:</strong> Inline small previews, plus bigger pop-up canvases for detailed wavefunction inspection.</li>
+    <li><strong>Performance Tweaks:</strong> Adjust point counts, sampling strategies, and shading to balance realism vs. speed.</li>
+  </ul>
+
+  <h2>Advanced Use Cases & Limitations</h2>
+  <p>
+    OVEC uses a hydrogenic model for multi-electron atoms, applying Slater’s rules for approximate shielding. Thus, real multi-electron
+    interactions are not fully captured. For conceptual demos and teaching, the approach works well. For advanced research or
+    high-accuracy calculations, methods like Hartree–Fock or DFT are necessary.
+  </p>
+
+  <div class="highlighted">
+    <strong>Note:</strong> For high-Z elements (e.g., Z=118), acceptance rates may be low with standard rejection
+    sampling. Future plans include more sophisticated sampling algorithms or GPU acceleration for large point sets.
+  </div>
+
+  <h2>Target Audience</h2>
+  <ul>
+    <li><strong>Students & Educators:</strong> High school or undergraduate physics/chemistry for a visual demonstration of orbitals.</li>
+    <li><strong>Hobbyists:</strong> Anyone curious about quantum mechanical structures in atoms.</li>
+    <li><strong>Classroom Demos:</strong> Great for lectures, workshops, or outreach events on fundamental atomic theory.</li>
+  </ul>
+
+  <h2>Future Directions</h2>
+  <ul>
+    <li><strong>Isotope Support:</strong> Deeper modeling of nuclear properties (beyond just changing N) and potential isotope visual comparisons.</li>
+    <li><strong>Web Worker & GPU Approaches:</strong> Offload large sampling tasks from the main thread for smoother UI experiences.</li>
+    <li><strong>Customizable Color Maps:</strong> Let users choose color ramps to emphasize node structures or radial distances more clearly.</li>
+    <!-- removed auto CI/CD mention here -->
+  </ul>
+
+  <h3>SEO Keywords</h3>
+  <p>
+    <em>Atomic orbitals, electron configurations, wavefunction visualization, quantum mechanics, hydrogen-like model,
+    Slater rules, radial wavefunction, 3D orbitals, periodic table exploration, nuclear physics, isotopes, OVEC project.</em>
+  </p>
+
+  <h2>Conclusion</h2>
+  <p>
+    We hope this <em>Orbital Visualizer for Electron Configurations</em> fosters an intuitive grasp of the shapes
+    and complexities of atomic orbitals. Feedback and contributions are welcome—together we can refine this tool
+    into a staple for quantum education and outreach.
+  </p>
+
+  <footer>
+    &copy; 2025 OVEC Project | Return to <a href="index.html" class="ovec-link">OVEC</a>
+  </footer>
+</main>
+</body>
+</html>
