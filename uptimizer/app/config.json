@@ -1,12 +1,6 @@
 {
     "endpoints": [
       {
-        "id": "local-test-ok",
-        "name": "Local Test Server (OK)",
-        "url": "http://uptimizer_test_server:8080/ok",
-        "group": "Test Environment"
-      },
-      {
         "id": "local-test-fail",
         "name": "Local Test Server (Fail)",
         "url": "http://uptimizer_test_server:8080/fail",

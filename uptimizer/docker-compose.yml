@@ -11,26 +11,66 @@ services:
     volumes:
       - ./app:/usr/src/app # Mount local app directory for development
     environment:
+      # Flask Environment
       - FLASK_ENV=development # Enable debug mode for development
-      # Pass the test server URL to the app
+      - FLASK_APP=main.py
+      # App Configuration
+      - UPTIMER_CONFIG_PATH=/usr/src/app/config.json # Optional: Path inside container
+      # Database Configuration (using service name 'uptimizer_db')
+      - DB_HOST=uptimizer_db
+      - DB_PORT=5432
+      - DB_NAME=uptimizer_data
+      - DB_USER=uptimizer_user
+      - DB_PASSWORD=supersecretpassword # Change in production! Use .env file ideally.
+      # Test Server URL (if needed by app logic, not just config.json)
       - TEST_SERVER_URL=http://uptimizer_test_server:8080
+    # env_file: # Optional: Load variables from .env file in the project root
+    #   - .env
     networks:
       - uptimizer_net
     depends_on:
-      - uptimizer_test_server
+      uptimizer_db:
+          condition: service_healthy # Wait for DB to be healthy (requires healthcheck)
+      uptimizer_test_server:
+          condition: service_started # Wait for test server to start
+    restart: unless-stopped # Restart policy
+
+  uptimizer_db:
+    image: postgres:15-alpine # Use official Postgres image
+    container_name: uptimizer_db
+    environment:
+      - POSTGRES_DB=uptimizer_data
+      - POSTGRES_USER=uptimizer_user
+      - POSTGRES_PASSWORD=supersecretpassword # Must match app config/env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persist data
+    ports:
+      - "5432:5432" # Optional: Expose port 5432 for direct DB access if needed
+    networks:
+      - uptimizer_net
+    healthcheck: # Add healthcheck for depends_on condition
+        test: ["CMD-SHELL", "pg_isready -U uptimizer_user -d uptimizer_data"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+    restart: unless-stopped # Restart policy
 
   uptimizer_test_server:
     build:
       context: ./test_server
-      dockerfile: Dockerfile # Assumes a Dockerfile exists in test_server
+      dockerfile: Dockerfile
     container_name: uptimizer_test_server
     ports:
       - "8080:8080" # Expose test server port if needed for direct access
     networks:
       - uptimizer_net
     volumes:
-      - ./test_server:/usr/src/app # Mount local test_server directory
+      - ./test_server:/usr/src/app
+    restart: unless-stopped # Restart policy
 
 networks:
   uptimizer_net:
     driver: bridge
+
+volumes:
+  postgres_data: # Define the named volume for data persistence

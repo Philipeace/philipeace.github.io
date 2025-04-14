@@ -5,43 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uptimizer Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
-    <!-- More Floating Background Elements -->
-    <div class="floating-element float1">Docker</div>
-    <div class="floating-element float2">GitOps</div>
-    <div class="floating-element float3">K8s</div>
-    <div class="floating-element float4">CyberSec</div>
-    <div class="floating-element float5">ArgoCD</div>
-    <div class="floating-element float6"></></div>
-    <div class="floating-element float7">Python</div>
-    <div class="floating-element float8">Prometheus</div>
-    <div class="floating-element float9">Flask</div>
-    <div class="floating-element float10">CI/CD</div>
-
+    <!-- Floating Elements (Unchanged) -->
+    <div class="floating-element float1">🐳 Dockerized!</div> <div class="floating-element float2">🐙 GitOps FTW</div> <!-- ... more elements ... --> <div class="floating-element float20">☕ Needs Coffee</div>
 
     <div class="container">
         <h1>Uptimizer - Keepin' Tabs on the Tabs</h1>
 
+        <!-- Add Endpoint Form -->
+        <div class="group-container">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <span class="group-title">Add New Endpoint</span>
+                <span class="group-toggle">▼</span>
+            </div>
+            <div class="group-content collapsed"> {# Start collapsed #}
+                <form id="add-endpoint-form" class="add-endpoint-form">
+                    <label for="new-endpoint-name">Name:</label>
+                    <input type="text" id="new-endpoint-name" name="name" required>
+
+                    <label for="new-endpoint-url">URL:</label>
+                    <input type="url" id="new-endpoint-url" name="url" placeholder="https://example.com" required>
+
+                    <label for="new-endpoint-group">Group (Optional):</label>
+                    <input type="text" id="new-endpoint-group" name="group" placeholder="e.g., Production APIs">
+
+                    <button type="submit">Add Endpoint</button>
+                    <p id="add-endpoint-error"></p> {# For displaying add errors #}
+                </form>
+            </div>
+        </div>
+        <!-- End Add Endpoint Form -->
+
+
         {% if endpoints %}
-            {# Group endpoints by the 'group' key #}
             {% for group, items in endpoints | groupby('group') %}
-            <div class="group-container">
+            <div class="group-container" data-group-name="{{ group if group else 'Default Group' }}"> {# Add data-group-name #}
                 <div class="group-header" onclick="toggleGroup(this)">
                     <span class="group-title">{{ group if group else 'Default Group' }}</span>
-                    <span class="group-toggle">▼</span> {# Indicator for collapsing state #}
+                    <span class="group-toggle">▼</span>
                 </div>
-                <div class="group-content"> {# Content starts expanded #}
-                    <ul class="endpoint-list">
+                <div class="group-content">
+                    <ul class="endpoint-list" id="endpoint-list-{{ group | replace(' ', '-') | lower if group else 'default-group' }}"> {# Add ID for dynamic adding #}
                         {% for endpoint in items %}
-                        <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}">
-                            <div class="endpoint-name">{{ endpoint.name }}</div>
+                        <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}" id="endpoint-item-{{ endpoint.id }}"> {# Add ID to li #}
+                            <div class="endpoint-name" onclick="openHistoryModal('{{ endpoint.id }}')">{{ endpoint.name }}</div> {# Click name for modal #}
                             <div class="endpoint-url">{{ endpoint.url }}</div>
-                            <div class="endpoint-status status-unknown" id="status-{{ endpoint.id }}">
-                                <!-- Status updated by JS --> PENDING
-                            </div>
-                            <div class="endpoint-details" id="details-{{ endpoint.id }}">
-                                <!-- Details updated by JS -->  
+                            <div class="endpoint-status status-unknown" id="status-{{ endpoint.id }}">PENDING</div>
+                            <div class="endpoint-details" id="details-{{ endpoint.id }}"> </div>
+                            <div class="endpoint-stats" id="stats-{{ endpoint.id }}">-- %</div>
+                            <div class="endpoint-actions"> {# New column for actions #}
+                                <button title="Delete Endpoint" onclick="deleteEndpoint(event, '{{ endpoint.id }}')">×</button> {# Delete button #}
                             </div>
                         </li>
                         {% endfor %}
@@ -50,200 +66,272 @@
             </div>
             {% endfor %}
         {% else %}
-            <div class="group-container">
-                 <div class="group-header"><span class="group-title">Info</span></div>
+            <div class="group-container" data-group-name="Default Group">
+                 <div class="group-header"><span class="group-title">Default Group</span></div>
                  <div class="group-content">
-                    <p>No endpoints configured yet. Add some to <code>app/config.json</code>!</p>
+                     <ul class="endpoint-list" id="endpoint-list-default-group">
+                         <li id="no-endpoints-message">No endpoints configured yet. Add one above!</li>
+                     </ul>
                  </div>
             </div>
         {% endif %}
 
-        <!-- Statistics section will go here -->
-        <!-- Configuration section will go here -->
+         <!-- Template for new endpoint row (hidden) -->
+         <template id="endpoint-row-template">
+            <li class="endpoint-item" data-endpoint-id="" id="">
+                <div class="endpoint-name" onclick=""></div>
+                <div class="endpoint-url"></div>
+                <div class="endpoint-status status-pending" id="">PENDING</div>
+                <div class="endpoint-details" id=""> </div>
+                <div class="endpoint-stats" id="">-- %</div>
+                <div class="endpoint-actions">
+                    <button title="Delete Endpoint" onclick="">×</button>
+                </div>
+            </li>
+        </template>
 
     </div>
 
     <footer>
-        <p>Uptimizer - Checking if your bits are beaming since... well, just now.</p>
+        <p>Uptimizer - Your friendly neighbourhood uptime bot.</p>
         <p id="footer-status">Initializing status checks...</p>
     </footer>
 
+    <!-- History Modal Structure (Unchanged) -->
+    <div class="modal-overlay" id="history-modal-overlay">
+         <div class="modal-content"> <button class="modal-close-btn" onclick="closeHistoryModal()">×</button> <div class="modal-header"> <h3 class="modal-title" id="history-modal-title">Endpoint History</h3> </div> <div class="modal-controls"> <button data-period="1h" onclick="changeHistoryPeriod(this)">Last Hour</button> <button data-period="24h" onclick="changeHistoryPeriod(this)" class="active">Last 24 Hours</button> <button data-period="7d" onclick="changeHistoryPeriod(this)">Last 7 Days</button> </div> <div class="modal-body"> <div class="modal-chart-container"> <canvas id="history-chart"></canvas> </div> <p id="history-modal-error" style="color: var(--vermilion); text-align: center; margin-top: 10px;"></p> </div> </div>
+    </div>
+    <!-- End History Modal -->
+
     <script>
-        // Use a shorter interval now that the backend isn't doing work on every poll
-        const POLLING_INTERVAL_MS = 5000; // Check every 5 seconds
-        const statusEndpoint = '/status';
+        // --- State & Endpoints (Unchanged) ---
+        let historyChart = null; let currentModalEndpointId = null; let currentHistoryPeriod = '24h';
+        const endpointNames = {{ endpoint_names | tojson }}; // Initial names
+        const POLLING_INTERVAL_MS = 5000; const statusEndpoint = '/status'; const statsEndpoint = '/statistics';
 
-        function toggleGroup(headerElement) {
-            const content = headerElement.nextElementSibling;
-            const toggle = headerElement.querySelector('.group-toggle');
-            const isCollapsed = content.classList.toggle('collapsed'); // Toggle returns true if class was added
+        // --- UI Update Functions (Unchanged) ---
+        function toggleGroup(headerElement) { const content = headerElement.nextElementSibling; const toggle = headerElement.querySelector('.group-toggle'); const isCollapsed = content.classList.toggle('collapsed'); if (isCollapsed) { content.style.maxHeight = '0'; content.style.paddingTop = '0'; content.style.paddingBottom = '0'; content.style.borderTopWidth = '0'; toggle.style.transform = 'rotate(-90deg)'; } else { content.style.maxHeight = content.scrollHeight + "px"; content.style.paddingTop = ''; content.style.paddingBottom = ''; content.style.borderTopWidth = ''; setTimeout(() => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = 'none'; } }, 500); toggle.style.transform = 'rotate(0deg)'; } }
+        function updateEndpointStatusUI(endpointId, statusData) { const statusElement = document.getElementById(`status-${endpointId}`); const detailsElement = document.getElementById(`details-${endpointId}`); if (!statusElement || !detailsElement) { return; } statusElement.className = 'endpoint-status'; let statusText = 'PENDING'; let detailsText = ' '; if (statusData) { statusText = statusData.status || 'UNKNOWN'; statusElement.classList.add(`status-${statusText.toLowerCase()}`); if (statusData.details) { if (statusData.status === 'UP' && statusData.details.response_time_ms !== undefined) { detailsText = `${statusData.details.response_time_ms} ms`; } else if (statusData.details.details) { detailsText = statusData.details.details; } else if (statusData.status === 'DOWN' && statusData.details.status_code) { detailsText = `HTTP ${statusData.details.status_code}`; } else if (statusData.details.status_code) { detailsText = `HTTP ${statusData.details.status_code}`; } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') { detailsText = 'Awaiting check...'; } } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') { detailsText = 'Awaiting check...'; } } else { statusElement.classList.add('status-unknown'); statusText = 'UNKNOWN'; detailsText = 'No status data'; } statusElement.textContent = statusText; detailsElement.innerHTML = detailsText; }
+        function updateEndpointStatsUI(endpointId, statsData) { const statsElement = document.getElementById(`stats-${endpointId}`); if (!statsElement) { return; } if (statsData) { if (statsData.error) { statsElement.innerHTML = `<span class="stats-error" title="${statsData.error}">Stats Err</span>`; } else if (statsData.uptime_percentage_24h !== null && statsData.uptime_percentage_24h !== undefined) { statsElement.innerHTML = `24h: <span class="stats-value">${statsData.uptime_percentage_24h}%</span>`; } else { statsElement.innerHTML = `24h: <span class="stats-value">--%</span>`; } } else { statsElement.innerHTML = `24h: <span class="stats-value">--%</span>`; } }
 
-            // Animate maxHeight for smooth collapse/expand
-            if (isCollapsed) {
-                content.style.maxHeight = '0';
-                content.style.paddingTop = '0';
-                content.style.paddingBottom = '0';
-                content.style.borderTopWidth = '0'; // Hide border when collapsed
-                toggle.style.transform = 'rotate(-90deg)';
-            } else {
-                // Set maxHeight to scrollHeight to animate open
-                content.style.maxHeight = content.scrollHeight + "px";
-                 content.style.paddingTop = ''; // Reset to CSS defaults
-                 content.style.paddingBottom = ''; // Reset to CSS defaults
-                 content.style.borderTopWidth = ''; // Reset to CSS defaults
+        // --- Main Polling Function (Unchanged) ---
+        async function fetchAndUpdateStatus() { const footerStatus = document.getElementById('footer-status'); let hasPending = false; try { const [statusResponse, statsResponse] = await Promise.all([fetch(statusEndpoint), fetch(statsEndpoint)]); /* Status Processing */ if (!statusResponse.ok) { console.error(`Error fetching status: ${statusResponse.status} ${statusResponse.statusText}`); } else { const statusResult = await statusResponse.json(); const statusData = statusResult.statuses; const lastUpdatedTimestamp = statusResult.last_updated; const displayedEndpointIds = new Set(); document.querySelectorAll('.endpoint-item').forEach(item => { if (item.dataset.endpointId) { displayedEndpointIds.add(item.dataset.endpointId); } }); for (const endpointId in statusData) { if (displayedEndpointIds.has(endpointId)) { updateEndpointStatusUI(endpointId, statusData[endpointId]); if (statusData[endpointId]?.status === 'PENDING') { hasPending = true; } } } displayedEndpointIds.forEach(domId => { if (!statusData[domId]) { updateEndpointStatusUI(domId, null); } }); const timestamp = new Date(lastUpdatedTimestamp * 1000).toLocaleTimeString(); if (footerStatus) { footerStatus.textContent = hasPending ? `Status updated: ${timestamp} (Checks ongoing...)` : `Status updated: ${timestamp}`; } } /* Stats Processing */ if (!statsResponse.ok) { console.error(`Error fetching statistics: ${statsResponse.status} ${statsResponse.statusText}`); } else { const statsResult = await statsResponse.json(); document.querySelectorAll('.endpoint-item').forEach(item => { const endpointId = item.dataset.endpointId; if (endpointId) { updateEndpointStatsUI(endpointId, statsResult[endpointId]); } }); } } catch (error) { console.error("Network error fetching status/stats:", error); if (footerStatus) footerStatus.textContent = `Status update failed: ${error.message}`; } }
 
-                 // Reset maxHeight after animation completes to allow dynamic content changes
-                 setTimeout(() => {
-                      if (!content.classList.contains('collapsed')) { // Check if still expanded
-                          content.style.maxHeight = 'none';
-                      }
-                 }, 500); // Match CSS transition duration
-                toggle.style.transform = 'rotate(0deg)';
-            }
+        // --- History Modal Functions (Unchanged) ---
+        async function fetchAndRenderHistory(endpointId, period) { console.log(`Fetching history for ${endpointId}, period: ${period}`); const modalErrorElement = document.getElementById('history-modal-error'); modalErrorElement.textContent = 'Loading history...'; try { const response = await fetch(`/history/${endpointId}?period=${period}`); if (!response.ok) { throw new Error(`HTTP error ${response.status}`); } const historyResult = await response.json(); if (historyResult.error) { throw new Error(historyResult.error); } const historyData = historyResult.data; modalErrorElement.textContent = ''; const labels = []; const responseTimes = []; historyData.forEach(point => { labels.push(new Date(point.timestamp)); if (point.status === 'UP' && point.response_time_ms !== null) { responseTimes.push(point.response_time_ms); } else { responseTimes.push(null); } }); const ctx = document.getElementById('history-chart').getContext('2d'); if (historyChart) { historyChart.destroy(); } historyChart = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Response Time (ms)', data: responseTimes, borderColor: 'var(--cocoa-brown)', backgroundColor: 'var(--cocoa-brown)', borderWidth: 2, tension: 0.1, pointBackgroundColor: 'rgba(226, 113, 29, 0.7)', pointRadius: 3, pointHoverRadius: 5, spanGaps: false }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: inferTimeScaleUnit(period), tooltipFormat: 'Pp', displayFormats: { millisecond: 'HH:mm:ss.SSS', second: 'HH:mm:ss', minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', week: 'MMM d', month: 'MMM yyyy', quarter: 'QQQ yyyy', year: 'yyyy', } }, title: { display: true, text: 'Time', color: 'var(--isabelline)' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(242, 233, 228, 0.1)' } }, y: { beginAtZero: true, title: { display: true, text: 'Response Time (ms)', color: 'var(--isabelline)' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(242, 233, 228, 0.1)' } } }, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false, } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } }); } catch (error) { console.error(`Error fetching/rendering history for ${endpointId}:`, error); modalErrorElement.textContent = `Error loading history: ${error.message}`; if (historyChart) { historyChart.destroy(); historyChart = null; } const ctx = document.getElementById('history-chart').getContext('2d'); ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); } }
+        function inferTimeScaleUnit(period) { switch (period) { case '1h': return 'minute'; case '24h': return 'hour'; case '7d': return 'day'; default: return 'hour'; } }
+        function openHistoryModal(endpointId) { currentModalEndpointId = endpointId; const modal = document.getElementById('history-modal-overlay'); const title = document.getElementById('history-modal-title'); const endpointName = endpointNames[endpointId] || 'Unknown Endpoint'; title.textContent = `History: ${endpointName}`; document.querySelectorAll('.modal-controls button').forEach(btn => { btn.classList.remove('active'); if(btn.dataset.period === '24h') { btn.classList.add('active'); } }); currentHistoryPeriod = '24h'; modal.style.display = 'flex'; fetchAndRenderHistory(endpointId, currentHistoryPeriod); }
+        function closeHistoryModal() { const modal = document.getElementById('history-modal-overlay'); modal.style.display = 'none'; currentModalEndpointId = null; if (historyChart) { historyChart.destroy(); historyChart = null; } const modalErrorElement = document.getElementById('history-modal-error'); if(modalErrorElement) modalErrorElement.textContent = ''; }
+        function changeHistoryPeriod(buttonElement) { const newPeriod = buttonElement.dataset.period; if (newPeriod === currentHistoryPeriod || !currentModalEndpointId) { return; } currentHistoryPeriod = newPeriod; document.querySelectorAll('.modal-controls button').forEach(btn => btn.classList.remove('active')); buttonElement.classList.add('active'); fetchAndRenderHistory(currentModalEndpointId, currentHistoryPeriod); }
+
+
+        // --- NEW: Runtime Config Functions ---
+
+        // Function to create a new endpoint row from template
+        function createEndpointRow(endpointData) {
+            const template = document.getElementById('endpoint-row-template');
+            const clone = template.content.firstElementChild.cloneNode(true); // Clone the li element
+
+            clone.dataset.endpointId = endpointData.id;
+            clone.id = `endpoint-item-${endpointData.id}`;
+
+            const nameEl = clone.querySelector('.endpoint-name');
+            nameEl.textContent = endpointData.name;
+            nameEl.onclick = () => openHistoryModal(endpointData.id); // Attach modal opener
+
+            clone.querySelector('.endpoint-url').textContent = endpointData.url;
+            clone.querySelector('.endpoint-status').id = `status-${endpointData.id}`;
+            clone.querySelector('.endpoint-details').id = `details-${endpointData.id}`;
+            clone.querySelector('.endpoint-stats').id = `stats-${endpointData.id}`;
+
+            const deleteBtn = clone.querySelector('.endpoint-actions button');
+            deleteBtn.onclick = (event) => deleteEndpoint(event, endpointData.id); // Attach delete handler
+
+            // Update global names map
+            endpointNames[endpointData.id] = endpointData.name;
+
+            return clone;
         }
 
+        // Function to find or create group list
+        function getOrCreateGroupList(groupName) {
+            const safeGroupName = (groupName || 'Default Group').replace(' ', '-').toLowerCase();
+            let listId = `endpoint-list-${safeGroupName}`;
+            let listElement = document.getElementById(listId);
 
-        function updateEndpointUI(endpointId, statusData) {
-            const statusElement = document.getElementById(`status-${endpointId}`);
-            const detailsElement = document.getElementById(`details-${endpointId}`);
+            if (!listElement) {
+                // Group doesn't exist yet, create it
+                console.log(`Creating new group container for: ${groupName}`);
+                const container = document.querySelector('.container'); // Append to main container
 
-            if (!statusElement || !detailsElement) {
-                // This can happen briefly if config changes before restart
-                // console.warn(`UI elements for endpoint ID ${endpointId} not found.`);
+                // Create group container div
+                const groupContainer = document.createElement('div');
+                groupContainer.className = 'group-container';
+                groupContainer.dataset.groupName = groupName || 'Default Group';
+
+                // Create header
+                const groupHeader = document.createElement('div');
+                groupHeader.className = 'group-header';
+                groupHeader.onclick = () => toggleGroup(groupHeader); // Make header clickable
+                groupHeader.innerHTML = `
+                    <span class="group-title">${groupName || 'Default Group'}</span>
+                    <span class="group-toggle">▼</span>`;
+                groupContainer.appendChild(groupHeader);
+
+                // Create content div and ul
+                const groupContent = document.createElement('div');
+                groupContent.className = 'group-content'; // Start expanded
+                listElement = document.createElement('ul');
+                listElement.className = 'endpoint-list';
+                listElement.id = listId;
+                groupContent.appendChild(listElement);
+                groupContainer.appendChild(groupContent);
+
+                 // Find the form container to insert before it (or append if nothing else exists)
+                 const addFormContainer = document.querySelector('.add-endpoint-form').closest('.group-container');
+                 if(addFormContainer) {
+                      container.insertBefore(groupContainer, addFormContainer);
+                 } else {
+                      container.appendChild(groupContainer); // Fallback
+                 }
+
+                 // Initialize toggle state if needed (usually starts expanded)
+                groupContent.style.maxHeight = groupContent.scrollHeight + "px";
+                setTimeout(() => { if (!groupContent.classList.contains('collapsed')) { groupContent.style.maxHeight = 'none'; } }, 500);
+
+            }
+            return listElement;
+        }
+
+        // Handle Add Endpoint Form Submission
+        const addForm = document.getElementById('add-endpoint-form');
+        const addErrorElement = document.getElementById('add-endpoint-error');
+
+        addForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission
+            addErrorElement.textContent = ''; // Clear previous errors
+            addErrorElement.style.display = 'none';
+
+            const formData = new FormData(addForm);
+            const endpointData = {
+                name: formData.get('name').trim(),
+                url: formData.get('url').trim(),
+                group: formData.get('group').trim() || 'Default Group' // Default group if empty
+            };
+
+            if (!endpointData.name || !endpointData.url) {
+                addErrorElement.textContent = 'Name and URL are required.';
+                addErrorElement.style.display = 'block';
                 return;
             }
 
-            // Reset classes
-            statusElement.className = 'endpoint-status'; // Base class
-
-            let statusText = 'PENDING'; // Default to PENDING if no fresh data yet
-            let detailsText = ' '; // Default empty state
-
-            if (statusData) {
-                 statusText = statusData.status || 'UNKNOWN'; // API should always return status
-                 statusElement.classList.add(`status-${statusText.toLowerCase()}`);
-
-                 if (statusData.details) {
-                    if (statusData.status === 'UP' && statusData.details.response_time_ms !== undefined) {
-                        detailsText = `${statusData.details.response_time_ms} ms`;
-                    } else if (statusData.details.details) {
-                        detailsText = statusData.details.details; // Specific error
-                    } else if (statusData.status === 'DOWN' && statusData.details.status_code) {
-                         detailsText = `HTTP ${statusData.details.status_code}`;
-                    } else if (statusData.details.status_code) {
-                         detailsText = `HTTP ${statusData.details.status_code}`; // Fallback
-                    } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') {
-                         detailsText = 'Awaiting check...';
-                    }
-                 } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') {
-                      detailsText = 'Awaiting check...';
-                 }
-            } else {
-                // No data from API for this endpoint ID (shouldn't happen with background checks)
-                statusElement.classList.add('status-unknown');
-                statusText = 'UNKNOWN';
-                detailsText = 'No status data';
+            // Basic URL validation (optional but recommended)
+            try {
+                new URL(endpointData.url);
+            } catch (_) {
+                 addErrorElement.textContent = 'Invalid URL format.';
+                 addErrorElement.style.display = 'block';
+                return;
             }
 
-            statusElement.textContent = statusText;
-            detailsElement.innerHTML = detailsText; // Use innerHTML because of  
-        }
-
-        async function fetchAndUpdateStatus() {
-            // console.log("Fetching status updates..."); // Less verbose logging
-            const footerStatus = document.getElementById('footer-status');
-            let hasPending = false; // Track if any endpoints are still pending
 
             try {
-                const response = await fetch(statusEndpoint);
+                const response = await fetch('/endpoints', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(endpointData),
+                });
+
+                const result = await response.json();
+
                 if (!response.ok) {
-                    console.error(`Error fetching status: ${response.status} ${response.statusText}`);
-                    if (footerStatus) footerStatus.textContent = `Error fetching status: ${response.status}`;
-                    // Don't clear existing statuses on temporary fetch error
-                    return;
-                }
-                const statusResult = await response.json();
-                const statusData = statusResult.statuses; // Statuses are now nested
-
-                // Get all endpoint IDs currently displayed in the DOM
-                const displayedEndpointIds = new Set();
-                document.querySelectorAll('.endpoint-item').forEach(item => {
-                    if (item.dataset.endpointId) {
-                         displayedEndpointIds.add(item.dataset.endpointId);
-                    }
-                });
-
-
-                // Update UI for all known endpoints from the API response
-                for (const endpointId in statusData) {
-                     if (displayedEndpointIds.has(endpointId)) {
-                          updateEndpointUI(endpointId, statusData[endpointId]);
-                          if (statusData[endpointId]?.status === 'PENDING') {
-                              hasPending = true;
-                          }
-                     } else {
-                          // Can happen if config changed and container not restarted
-                          // console.warn(`Status received for endpoint ID ${endpointId} which is not in the DOM.`);
-                     }
+                    throw new Error(result.error || `HTTP error ${response.status}`);
                 }
 
-                // Mark endpoints in the DOM that were NOT in the API response as UNKNOWN
-                // This handles cases where an endpoint is removed from config but UI hasn't refreshed
-                displayedEndpointIds.forEach(domId => {
-                    if (!statusData[domId]) {
-                        console.warn(`Endpoint ID ${domId} is in the DOM but not in the latest status response. Marking as UNKNOWN.`);
-                        updateEndpointUI(domId, { status: 'UNKNOWN', details: { details: 'Removed from config?' } });
-                    }
-                });
+                console.log('Endpoint added:', result); // result contains the added endpoint with ID
 
-                const timestamp = new Date(statusResult.last_updated * 1000).toLocaleTimeString();
-                if (footerStatus) {
-                    footerStatus.textContent = hasPending
-                        ? `Status updated: ${timestamp} (Checks ongoing...)`
-                        : `Status updated: ${timestamp}`;
-                }
+                 // Dynamically add the new row to the correct group
+                 const listElement = getOrCreateGroupList(result.group);
+                 const newRow = createEndpointRow(result);
+                 // Remove "no endpoints" message if it exists
+                 const noEndpointsMsg = listElement.querySelector('#no-endpoints-message');
+                 if (noEndpointsMsg) noEndpointsMsg.remove();
+
+                 listElement.appendChild(newRow);
+
+                // Clear the form
+                addForm.reset();
+
+                 // Optional: scroll to the new group/item?
+                 // Optional: Briefly highlight the new row?
 
             } catch (error) {
-                console.error("Network error or JSON parsing error fetching status:", error);
-                if (footerStatus) footerStatus.textContent = `Status update failed: ${error.message}`;
-                 // Don't clear existing statuses on temporary fetch error
+                console.error('Error adding endpoint:', error);
+                addErrorElement.textContent = `Failed to add endpoint: ${error.message}`;
+                addErrorElement.style.display = 'block';
+            }
+        });
+
+
+        // Handle Delete Endpoint Click
+        async function deleteEndpoint(event, endpointId) {
+            event.stopPropagation(); // Prevent triggering row click (modal)
+
+            if (!confirm(`Are you sure you want to delete endpoint ID: ${endpointId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/endpoints/${endpointId}`, {
+                    method: 'DELETE',
+                });
+
+                 const result = await response.json(); // Even errors might have JSON body
+
+                if (!response.ok) {
+                     throw new Error(result.error || `HTTP error ${response.status}`);
+                }
+
+                console.log('Endpoint deleted:', endpointId);
+
+                // Remove the row from the UI
+                const rowElement = document.getElementById(`endpoint-item-${endpointId}`);
+                if (rowElement) {
+                     const parentList = rowElement.parentNode;
+                    rowElement.remove();
+                     // Optional: If group becomes empty, maybe remove group or add message?
+                     if (parentList && parentList.children.length === 0) {
+                         // Could add back a "no endpoints" message or hide group
+                         // console.log(`Group ${parentList.id} is now empty.`);
+                     }
+                }
+                 // Remove from global names map
+                 delete endpointNames[endpointId];
+
+            } catch (error) {
+                console.error('Error deleting endpoint:', error);
+                alert(`Failed to delete endpoint: ${error.message}`); // Simple alert for delete errors
             }
         }
 
-        // Initial fetch and start polling
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("Uptimizer UI Initialized. Starting status polling...");
-            fetchAndUpdateStatus(); // Fetch immediately on load
-            setInterval(fetchAndUpdateStatus, POLLING_INTERVAL_MS); // Then poll periodically
 
-             // Initialize collapsed state for groups based on CSS default (expanded)
-             // Add smooth transition logic to toggleGroup
-             document.querySelectorAll('.group-content').forEach(content => {
-                // If NOT starting collapsed (default), set initial maxHeight for animation
-                 if (!content.classList.contains('collapsed')) {
-                      content.style.maxHeight = content.scrollHeight + "px";
-                       // Reset maxHeight after initial animation to allow dynamic content changes later
-                     setTimeout(() => {
-                         if (!content.classList.contains('collapsed')) {
-                              content.style.maxHeight = 'none';
-                         }
-                     }, 500); // Match CSS transition duration
-                 } else {
-                     // Ensure initially collapsed groups have 0 maxHeight
-                     content.style.maxHeight = '0';
-                     content.style.paddingTop = '0';
-                     content.style.paddingBottom = '0';
-                     content.style.borderTopWidth = '0';
-                     // Rotate toggle icon for initially collapsed groups
-                     const header = content.previousElementSibling;
-                     if(header) {
-                         const toggle = header.querySelector('.group-toggle');
-                         if(toggle) toggle.style.transform = 'rotate(-90deg)';
-                     }
-                 }
-             });
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => { /* ... Polling, Group Init, Modal Listeners unchanged ... */
+             console.log("Uptimizer UI Initialized..."); fetchAndUpdateStatus(); setInterval(fetchAndUpdateStatus, POLLING_INTERVAL_MS); document.querySelectorAll('.group-content').forEach(content => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = content.scrollHeight + "px"; setTimeout(() => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = 'none'; } }, 500); } else { content.style.maxHeight = '0'; content.style.paddingTop = '0'; content.style.paddingBottom = '0'; content.style.borderTopWidth = '0'; const header = content.previousElementSibling; if(header) { const toggle = header.querySelector('.group-toggle'); if(toggle) toggle.style.transform = 'rotate(-90deg)'; } } }); const modalOverlay = document.getElementById('history-modal-overlay'); modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) { closeHistoryModal(); } }); document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modalOverlay.style.display === 'flex') { closeHistoryModal(); } });
+             // Initial setup for Add form collapse state
+              const addFormContent = document.querySelector('#add-endpoint-form').closest('.group-content');
+              if (addFormContent && addFormContent.classList.contains('collapsed')) {
+                  addFormContent.style.maxHeight = '0';
+                  addFormContent.style.paddingTop = '0';
+                  addFormContent.style.paddingBottom = '0';
+                  addFormContent.style.borderTopWidth = '0';
+                  const header = addFormContent.previousElementSibling;
+                  if(header) { const toggle = header.querySelector('.group-toggle'); if(toggle) toggle.style.transform = 'rotate(-90deg)';}
+              }
         });
-
     </script>
+
 </body>
 </html>
