@@ -2,7 +2,7 @@ import os
 import psycopg2
 import time
 from datetime import datetime, timedelta, timezone
-from psycopg2 import pool, OperationalError, InterfaceError, sql # Import sql for safe identifiers
+from psycopg2 import pool, OperationalError, InterfaceError
 
 # --- Database Connection Pool ---
 db_pool = None
@@ -75,13 +75,9 @@ def init_db():
             conn.commit(); print("DB schema initialized.")
     except Exception as e:
         print(f"Error initializing DB schema: {e}")
-        # *** Corrected Indentation Below ***
-        try:
-            conn.rollback()
-        except Exception as re:
-            print(f"Error during rollback: {re}")
-    finally:
-        release_connection(conn)
+        try: conn.rollback()
+        except Exception as re: print(f"Error during rollback: {re}")
+    finally: release_connection(conn)
 
 # --- Data Persistence ---
 last_saved_status = {}
@@ -109,13 +105,9 @@ def save_status_change(endpoint_id, check_result):
             conn.commit(); last_saved_status[endpoint_id] = {'status': current_status, 'details': current_details}
     except Exception as e:
         print(f"Error saving status for {endpoint_id}: {e}")
-        # *** Corrected Indentation Below ***
-        try:
-            conn.rollback()
-        except Exception as re:
-            print(f"Error during rollback: {re}")
-    finally:
-        release_connection(conn)
+        try: conn.rollback()
+        except Exception as re: print(f"Error during rollback: {re}")
+    finally: release_connection(conn)
 
 # --- Statistics & History Retrieval ---
 def get_stats_last_24h(endpoint_id):
@@ -146,12 +138,8 @@ def get_stats_last_24h(endpoint_id):
     except Exception as e:
         print(f"Error calculating stats for {endpoint_id}: {e}")
         results["error"] = "Calculation error"
-        # *** Corrected Indentation Below ***
-        try:
-            # Rollback might not be needed for SELECT, but good practice if complex query
-            conn.rollback()
-        except Exception as re:
-            print(f"Error during rollback: {re}")
+        try: conn.rollback()
+        except Exception as re: print(f"Error during rollback: {re}")
     finally: release_connection(conn)
     return results
 
@@ -167,14 +155,11 @@ def get_history_for_period(endpoint_id, start_time, end_time):
                            ORDER BY timestamp ASC""", (endpoint_id, start_time, end_time))
             rows = cur.fetchall()
             results["data"] = [{"timestamp": row[0].isoformat(), "status": row[1], "response_time_ms": row[2]} for row in rows]
-            print(f"Fetched {len(rows)} history points for {endpoint_id} in period.")
+            # print(f"Fetched {len(rows)} history points for {endpoint_id} in period.") # Less verbose logging
     except Exception as e:
         print(f"Error fetching history for {endpoint_id}: {e}")
         results["error"] = f"History fetch error: {e}"
-        # *** Corrected Indentation Below ***
-        try:
-            conn.rollback()
-        except Exception as re:
-            print(f"Error during rollback: {re}")
+        try: conn.rollback()
+        except Exception as re: print(f"Error during rollback: {re}")
     finally: release_connection(conn)
     return results

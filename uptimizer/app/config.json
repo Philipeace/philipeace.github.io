@@ -1,32 +1,50 @@
 {
-    "endpoints": [
-      {
-        "id": "local-test-fail",
-        "name": "Local Test Server (Fail)",
-        "url": "http://uptimizer_test_server:8080/fail",
-        "group": "Test Environment"
-      },
-      {
-        "id": "local-test-slow",
-        "name": "Local Test Server (Slow)",
-        "url": "http://uptimizer_test_server:8080/slow",
-        "group": "Test Environment"
-      },
-      {
-        "id": "external-exampleee",
-        "name": "External Example Site",
-        "url": "https://example.com",
-        "group": "External Services"
-      },
-      {
-        "id": "my_baddie2§$%",
-        "name": "myass",
-        "url": "https://iits-consulting.de",
-        "group": "Home<3"
-      }
-    ],
     "settings": {
-      "check_interval_seconds": 15,
-      "data_retention_days": 180
-    }
-  }
+        "check_interval_seconds": 30,
+        "check_timeout_seconds": 10
+    },
+    "endpoints": [
+        {
+            "id": "local-test-ok",
+            "name": "Local Test Server (OK)",
+            "url": "http://uptimizer_test_server:8080/ok",
+            "group": "Test Environment",
+            "check_timeout_seconds": 5
+        },
+        {
+            "id": "local-test-fail",
+            "name": "Local Test Server (Fail)",
+            "url": "http://uptimizer_test_server:8080/fail",
+            "group": "Test Environment",
+            "check_timeout_seconds": 22
+        },
+        {
+            "id": "local-test-slow",
+            "name": "Local Test Server (Slow)",
+            "url": "http://uptimizer_test_server:8080/slow",
+            "group": "Test Environment",
+            "check_timeout_seconds": 2
+        },
+        {
+            "id": "external-example",
+            "name": "External Example Site",
+            "url": "https://example.com",
+            "group": "External Services",
+            "check_timeout_seconds": null
+        },
+        {
+            "id": "ep_ed977a96e0",
+            "name": "external services",
+            "url": "https://mybad.com",
+            "group": "test",
+            "check_timeout_seconds": 1000
+        },
+        {
+            "id": "ep_9b2025a87d",
+            "name": "testte",
+            "url": "https://localhost:8080",
+            "group": "test",
+            "check_timeout_seconds": 2
+        }
+    ]
+}

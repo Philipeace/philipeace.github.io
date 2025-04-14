@@ -9,55 +9,44 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
-    <!-- Floating Elements (Unchanged) -->
-    <div class="floating-element float1">🐳 Dockerized!</div> <div class="floating-element float2">🐙 GitOps FTW</div> <!-- ... more elements ... --> <div class="floating-element float20">☕ Needs Coffee</div>
+    <!-- Container for Floating Elements -->
+    <div class="floating-element-container" id="floating-elements"></div>
 
     <div class="container">
         <h1>Uptimizer - Keepin' Tabs on the Tabs</h1>
 
         <!-- Add Endpoint Form -->
         <div class="group-container">
-            <div class="group-header" onclick="toggleGroup(this)">
-                <span class="group-title">Add New Endpoint</span>
-                <span class="group-toggle">▼</span>
-            </div>
-            <div class="group-content collapsed"> {# Start collapsed #}
+            <div class="group-header" onclick="toggleGroup(this)"> <span class="group-title">Add New Endpoint</span> <span class="group-toggle">▼</span> </div>
+            <div class="group-content collapsed">
                 <form id="add-endpoint-form" class="add-endpoint-form">
-                    <label for="new-endpoint-name">Name:</label>
-                    <input type="text" id="new-endpoint-name" name="name" required>
-
-                    <label for="new-endpoint-url">URL:</label>
-                    <input type="url" id="new-endpoint-url" name="url" placeholder="https://example.com" required>
-
-                    <label for="new-endpoint-group">Group (Optional):</label>
-                    <input type="text" id="new-endpoint-group" name="group" placeholder="e.g., Production APIs">
-
-                    <button type="submit">Add Endpoint</button>
-                    <p id="add-endpoint-error"></p> {# For displaying add errors #}
+                     <div class="form-group"> <label for="new-endpoint-name">Name:</label> <input type="text" id="new-endpoint-name" name="name" required> </div>
+                     <div class="form-group"> <label for="new-endpoint-group">Group:</label> <input type="text" id="new-endpoint-group" name="group" placeholder="Default Group"> </div>
+                     <div class="form-group form-group-full"> <label for="new-endpoint-url">URL:</label> <input type="text" id="new-endpoint-url" name="url" placeholder="https://example.com" required> </div>
+                     <div class="form-group"> <label for="new-endpoint-timeout">Timeout (secs, optional):</label> <input type="number" id="new-endpoint-timeout" name="check_timeout_seconds" placeholder="{{ app_settings.check_timeout_seconds | default(10) }}" min="1"> </div>
+                     <p id="add-endpoint-error" class="form-group-full"></p>
+                    <button type="submit" class="form-group-full">Add Endpoint</button>
                 </form>
             </div>
         </div>
-        <!-- End Add Endpoint Form -->
 
-
+        <!-- Endpoint List -->
         {% if endpoints %}
             {% for group, items in endpoints | groupby('group') %}
-            <div class="group-container" data-group-name="{{ group if group else 'Default Group' }}"> {# Add data-group-name #}
-                <div class="group-header" onclick="toggleGroup(this)">
-                    <span class="group-title">{{ group if group else 'Default Group' }}</span>
-                    <span class="group-toggle">▼</span>
-                </div>
+            <div class="group-container" data-group-name="{{ group if group else 'Default Group' }}">
+                <div class="group-header" onclick="toggleGroup(this)"> <span class="group-title">{{ group if group else 'Default Group' }}</span> <span class="group-toggle">▼</span> </div>
                 <div class="group-content">
-                    <ul class="endpoint-list" id="endpoint-list-{{ group | replace(' ', '-') | lower if group else 'default-group' }}"> {# Add ID for dynamic adding #}
+                    <ul class="endpoint-list" id="endpoint-list-{{ group | replace(' ', '-') | lower if group else 'default-group' }}">
                         {% for endpoint in items %}
-                        <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}" id="endpoint-item-{{ endpoint.id }}"> {# Add ID to li #}
-                            <div class="endpoint-name" onclick="openHistoryModal('{{ endpoint.id }}')">{{ endpoint.name }}</div> {# Click name for modal #}
+                        <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}" id="endpoint-item-{{ endpoint.id }}" onclick="openHistoryModalMaybe(event, '{{ endpoint.id }}')">
+                            <div class="endpoint-name">{{ endpoint.name }}</div>
                             <div class="endpoint-url">{{ endpoint.url }}</div>
                             <div class="endpoint-status status-unknown" id="status-{{ endpoint.id }}">PENDING</div>
                             <div class="endpoint-details" id="details-{{ endpoint.id }}"> </div>
                             <div class="endpoint-stats" id="stats-{{ endpoint.id }}">-- %</div>
-                            <div class="endpoint-actions"> {# New column for actions #}
-                                <button title="Delete Endpoint" onclick="deleteEndpoint(event, '{{ endpoint.id }}')">×</button> {# Delete button #}
+                            <div class="endpoint-actions">
+                                <button class="edit-btn" title="Edit Endpoint" onclick="openEditModal(event, '{{ endpoint.id }}')">✎</button> {# Edit button #}
+                                <button title="Delete Endpoint" onclick="deleteEndpoint(event, '{{ endpoint.id }}')">×</button>
                             </div>
                         </li>
                         {% endfor %}
@@ -66,270 +55,195 @@
             </div>
             {% endfor %}
         {% else %}
-            <div class="group-container" data-group-name="Default Group">
-                 <div class="group-header"><span class="group-title">Default Group</span></div>
-                 <div class="group-content">
-                     <ul class="endpoint-list" id="endpoint-list-default-group">
-                         <li id="no-endpoints-message">No endpoints configured yet. Add one above!</li>
-                     </ul>
-                 </div>
-            </div>
+             <div class="group-container" data-group-name="Default Group"> <div class="group-header"><span class="group-title">Default Group</span></div> <div class="group-content"> <ul class="endpoint-list" id="endpoint-list-default-group"> <li id="no-endpoints-message">No endpoints loaded. Add one above!</li> </ul> </div> </div>
         {% endif %}
 
-         <!-- Template for new endpoint row (hidden) -->
+         <!-- Template for new endpoint row (Added Edit Button) -->
          <template id="endpoint-row-template">
-            <li class="endpoint-item" data-endpoint-id="" id="">
-                <div class="endpoint-name" onclick=""></div>
+            <li class="endpoint-item" data-endpoint-id="" id="" onclick="">
+                <div class="endpoint-name"></div>
                 <div class="endpoint-url"></div>
                 <div class="endpoint-status status-pending" id="">PENDING</div>
                 <div class="endpoint-details" id=""> </div>
                 <div class="endpoint-stats" id="">-- %</div>
                 <div class="endpoint-actions">
+                    <button class="edit-btn" title="Edit Endpoint" onclick="">✎</button>
                     <button title="Delete Endpoint" onclick="">×</button>
                 </div>
             </li>
         </template>
-
     </div>
 
-    <footer>
-        <p>Uptimizer - Your friendly neighbourhood uptime bot.</p>
-        <p id="footer-status">Initializing status checks...</p>
-    </footer>
+    <footer> <p>Uptimizer - Your friendly neighbourhood uptime bot.</p> <p id="footer-status">Initializing status checks...</p> </footer>
 
     <!-- History Modal Structure (Unchanged) -->
-    <div class="modal-overlay" id="history-modal-overlay">
-         <div class="modal-content"> <button class="modal-close-btn" onclick="closeHistoryModal()">×</button> <div class="modal-header"> <h3 class="modal-title" id="history-modal-title">Endpoint History</h3> </div> <div class="modal-controls"> <button data-period="1h" onclick="changeHistoryPeriod(this)">Last Hour</button> <button data-period="24h" onclick="changeHistoryPeriod(this)" class="active">Last 24 Hours</button> <button data-period="7d" onclick="changeHistoryPeriod(this)">Last 7 Days</button> </div> <div class="modal-body"> <div class="modal-chart-container"> <canvas id="history-chart"></canvas> </div> <p id="history-modal-error" style="color: var(--vermilion); text-align: center; margin-top: 10px;"></p> </div> </div>
+    <div class="modal-overlay" id="history-modal-overlay"> <div class="modal-content"> <button class="modal-close-btn" onclick="closeHistoryModal()">×</button> <div class="modal-header"> <h3 class="modal-title" id="history-modal-title">Endpoint History</h3> </div> <div class="modal-controls"> <button data-period="1h" onclick="changeHistoryPeriod(this)">Last Hour</button> <button data-period="24h" onclick="changeHistoryPeriod(this)" class="active">Last 24 Hours</button> <button data-period="7d" onclick="changeHistoryPeriod(this)">Last 7 Days</button> </div> <div class="modal-body"> <div class="modal-chart-container"> <canvas id="history-chart"></canvas> </div> <p id="history-modal-error" style="color: var(--vermilion); text-align: center; margin-top: 10px;"></p> </div> </div> </div>
+
+    <!-- Edit Modal Structure (Reuses modal overlay/content structure) -->
+    <div class="modal-overlay" id="edit-modal-overlay">
+        <div class="modal-content edit-modal">
+            <button class="modal-close-btn" onclick="closeEditModal()">×</button>
+            <div class="modal-header">
+                <h3 class="modal-title" id="edit-modal-title">Edit Endpoint</h3>
+            </div>
+            <div class="modal-body">
+                <form id="edit-endpoint-form" class="modal-form">
+                    <input type="hidden" id="edit-endpoint-id" name="id"> {# Hidden field for ID #}
+                    <div>
+                        <label for="edit-endpoint-name">Name:</label>
+                        <input type="text" id="edit-endpoint-name" name="name" required>
+                    </div>
+                    <div>
+                        <label for="edit-endpoint-url">URL:</label>
+                        <input type="text" id="edit-endpoint-url" name="url" required>
+                    </div>
+                     <div>
+                        <label for="edit-endpoint-group">Group:</label>
+                        <input type="text" id="edit-endpoint-group" name="group">
+                    </div>
+                    <div>
+                        <label for="edit-endpoint-timeout">Timeout (secs, optional):</label>
+                        <input type="number" id="edit-endpoint-timeout" name="check_timeout_seconds" placeholder="Global Default" min="1">
+                    </div>
+                    <p id="edit-endpoint-error" style="color: var(--vermilion); display: none;"></p>
+                    <button type="submit">Save Changes</button>
+                </form>
+            </div>
+        </div>
     </div>
-    <!-- End History Modal -->
+    <!-- End Edit Modal -->
+
 
     <script>
-        // --- State & Endpoints (Unchanged) ---
+        // --- State & Endpoints ---
         let historyChart = null; let currentModalEndpointId = null; let currentHistoryPeriod = '24h';
-        const endpointNames = {{ endpoint_names | tojson }}; // Initial names
+        let endpointData = {{ endpoint_data | tojson }}; // Store initial full endpoint data
         const POLLING_INTERVAL_MS = 5000; const statusEndpoint = '/status'; const statsEndpoint = '/statistics';
 
-        // --- UI Update Functions (Unchanged) ---
+        // --- UI Update Functions ---
         function toggleGroup(headerElement) { const content = headerElement.nextElementSibling; const toggle = headerElement.querySelector('.group-toggle'); const isCollapsed = content.classList.toggle('collapsed'); if (isCollapsed) { content.style.maxHeight = '0'; content.style.paddingTop = '0'; content.style.paddingBottom = '0'; content.style.borderTopWidth = '0'; toggle.style.transform = 'rotate(-90deg)'; } else { content.style.maxHeight = content.scrollHeight + "px"; content.style.paddingTop = ''; content.style.paddingBottom = ''; content.style.borderTopWidth = ''; setTimeout(() => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = 'none'; } }, 500); toggle.style.transform = 'rotate(0deg)'; } }
         function updateEndpointStatusUI(endpointId, statusData) { const statusElement = document.getElementById(`status-${endpointId}`); const detailsElement = document.getElementById(`details-${endpointId}`); if (!statusElement || !detailsElement) { return; } statusElement.className = 'endpoint-status'; let statusText = 'PENDING'; let detailsText = ' '; if (statusData) { statusText = statusData.status || 'UNKNOWN'; statusElement.classList.add(`status-${statusText.toLowerCase()}`); if (statusData.details) { if (statusData.status === 'UP' && statusData.details.response_time_ms !== undefined) { detailsText = `${statusData.details.response_time_ms} ms`; } else if (statusData.details.details) { detailsText = statusData.details.details; } else if (statusData.status === 'DOWN' && statusData.details.status_code) { detailsText = `HTTP ${statusData.details.status_code}`; } else if (statusData.details.status_code) { detailsText = `HTTP ${statusData.details.status_code}`; } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') { detailsText = 'Awaiting check...'; } } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') { detailsText = 'Awaiting check...'; } } else { statusElement.classList.add('status-unknown'); statusText = 'UNKNOWN'; detailsText = 'No status data'; } statusElement.textContent = statusText; detailsElement.innerHTML = detailsText; }
         function updateEndpointStatsUI(endpointId, statsData) { const statsElement = document.getElementById(`stats-${endpointId}`); if (!statsElement) { return; } if (statsData) { if (statsData.error) { statsElement.innerHTML = `<span class="stats-error" title="${statsData.error}">Stats Err</span>`; } else if (statsData.uptime_percentage_24h !== null && statsData.uptime_percentage_24h !== undefined) { statsElement.innerHTML = `24h: <span class="stats-value">${statsData.uptime_percentage_24h}%</span>`; } else { statsElement.innerHTML = `24h: <span class="stats-value">--%</span>`; } } else { statsElement.innerHTML = `24h: <span class="stats-value">--%</span>`; } }
 
-        // --- Main Polling Function (Unchanged) ---
-        async function fetchAndUpdateStatus() { const footerStatus = document.getElementById('footer-status'); let hasPending = false; try { const [statusResponse, statsResponse] = await Promise.all([fetch(statusEndpoint), fetch(statsEndpoint)]); /* Status Processing */ if (!statusResponse.ok) { console.error(`Error fetching status: ${statusResponse.status} ${statusResponse.statusText}`); } else { const statusResult = await statusResponse.json(); const statusData = statusResult.statuses; const lastUpdatedTimestamp = statusResult.last_updated; const displayedEndpointIds = new Set(); document.querySelectorAll('.endpoint-item').forEach(item => { if (item.dataset.endpointId) { displayedEndpointIds.add(item.dataset.endpointId); } }); for (const endpointId in statusData) { if (displayedEndpointIds.has(endpointId)) { updateEndpointStatusUI(endpointId, statusData[endpointId]); if (statusData[endpointId]?.status === 'PENDING') { hasPending = true; } } } displayedEndpointIds.forEach(domId => { if (!statusData[domId]) { updateEndpointStatusUI(domId, null); } }); const timestamp = new Date(lastUpdatedTimestamp * 1000).toLocaleTimeString(); if (footerStatus) { footerStatus.textContent = hasPending ? `Status updated: ${timestamp} (Checks ongoing...)` : `Status updated: ${timestamp}`; } } /* Stats Processing */ if (!statsResponse.ok) { console.error(`Error fetching statistics: ${statsResponse.status} ${statsResponse.statusText}`); } else { const statsResult = await statsResponse.json(); document.querySelectorAll('.endpoint-item').forEach(item => { const endpointId = item.dataset.endpointId; if (endpointId) { updateEndpointStatsUI(endpointId, statsResult[endpointId]); } }); } } catch (error) { console.error("Network error fetching status/stats:", error); if (footerStatus) footerStatus.textContent = `Status update failed: ${error.message}`; } }
+        // --- Main Polling Function ---
+        async function fetchAndUpdateStatus() { const footerStatus = document.getElementById('footer-status'); let hasPending = false; try { const [statusResponse, statsResponse] = await Promise.allSettled([fetch(statusEndpoint), fetch(statsEndpoint)]); /* Status Processing */ if (statusResponse.status === 'fulfilled' && statusResponse.value.ok) { const statusResult = await statusResponse.value.json(); const statusData = statusResult.statuses; const lastUpdatedTimestamp = statusResult.last_updated; const displayedEndpointIds = new Set(); Object.keys(endpointData).forEach(id => displayedEndpointIds.add(id)); for (const endpointId in statusData) { if (displayedEndpointIds.has(endpointId)) { updateEndpointStatusUI(endpointId, statusData[endpointId]); if (statusData[endpointId]?.status === 'PENDING') { hasPending = true; } } } const timestamp = new Date(lastUpdatedTimestamp * 1000).toLocaleTimeString(); if (footerStatus) { footerStatus.textContent = hasPending ? `Status updated: ${timestamp} (Checks ongoing...)` : `Status updated: ${timestamp}`; } } else { console.error(`Error fetching status: ${statusResponse.reason || statusResponse.value?.status}`); if (footerStatus) footerStatus.textContent = `Status fetch failed!`; } /* Stats Processing */ if (statsResponse.status === 'fulfilled' && statsResponse.value.ok) { const statsResult = await statsResponse.value.json(); Object.keys(endpointData).forEach(endpointId => { updateEndpointStatsUI(endpointId, statsResult[endpointId]); }); } else { console.error(`Error fetching statistics: ${statsResponse.reason || statsResponse.value?.status}`); Object.keys(endpointData).forEach(endpointId => updateEndpointStatsUI(endpointId, { error: "Fetch failed" })); } } catch (error) { console.error("Network error during fetch polling:", error); if (footerStatus) footerStatus.textContent = `Update failed: Network Error`; } }
 
-        // --- History Modal Functions (Unchanged) ---
-        async function fetchAndRenderHistory(endpointId, period) { console.log(`Fetching history for ${endpointId}, period: ${period}`); const modalErrorElement = document.getElementById('history-modal-error'); modalErrorElement.textContent = 'Loading history...'; try { const response = await fetch(`/history/${endpointId}?period=${period}`); if (!response.ok) { throw new Error(`HTTP error ${response.status}`); } const historyResult = await response.json(); if (historyResult.error) { throw new Error(historyResult.error); } const historyData = historyResult.data; modalErrorElement.textContent = ''; const labels = []; const responseTimes = []; historyData.forEach(point => { labels.push(new Date(point.timestamp)); if (point.status === 'UP' && point.response_time_ms !== null) { responseTimes.push(point.response_time_ms); } else { responseTimes.push(null); } }); const ctx = document.getElementById('history-chart').getContext('2d'); if (historyChart) { historyChart.destroy(); } historyChart = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Response Time (ms)', data: responseTimes, borderColor: 'var(--cocoa-brown)', backgroundColor: 'var(--cocoa-brown)', borderWidth: 2, tension: 0.1, pointBackgroundColor: 'rgba(226, 113, 29, 0.7)', pointRadius: 3, pointHoverRadius: 5, spanGaps: false }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: inferTimeScaleUnit(period), tooltipFormat: 'Pp', displayFormats: { millisecond: 'HH:mm:ss.SSS', second: 'HH:mm:ss', minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', week: 'MMM d', month: 'MMM yyyy', quarter: 'QQQ yyyy', year: 'yyyy', } }, title: { display: true, text: 'Time', color: 'var(--isabelline)' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(242, 233, 228, 0.1)' } }, y: { beginAtZero: true, title: { display: true, text: 'Response Time (ms)', color: 'var(--isabelline)' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(242, 233, 228, 0.1)' } } }, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false, } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } }); } catch (error) { console.error(`Error fetching/rendering history for ${endpointId}:`, error); modalErrorElement.textContent = `Error loading history: ${error.message}`; if (historyChart) { historyChart.destroy(); historyChart = null; } const ctx = document.getElementById('history-chart').getContext('2d'); ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); } }
+        // --- History Modal Functions ---
+        async function fetchAndRenderHistory(endpointId, period) { /* ... Unchanged ... */ console.log(`Fetching history for ${endpointId}, period: ${period}`); const modalErrorElement = document.getElementById('history-modal-error'); modalErrorElement.textContent = 'Loading history...'; try { const response = await fetch(`/history/${endpointId}?period=${period}`); if (!response.ok) { const errData = await response.json().catch(() => ({error: `HTTP error ${response.status}`})); throw new Error(errData.error || `HTTP error ${response.status}`); } const historyResult = await response.json(); if (historyResult.error) { throw new Error(historyResult.error); } const historyData = historyResult.data; modalErrorElement.textContent = ''; const labels = []; const responseTimes = []; historyData.forEach(point => { labels.push(new Date(point.timestamp)); if (point.status === 'UP' && point.response_time_ms !== null) { responseTimes.push(point.response_time_ms); } else { responseTimes.push(null); } }); const ctx = document.getElementById('history-chart').getContext('2d'); if (historyChart) { historyChart.destroy(); } historyChart = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Response Time (ms)', data: responseTimes, borderColor: 'var(--cocoa-brown)', backgroundColor: 'var(--cocoa-brown)', borderWidth: 2, tension: 0.1, pointBackgroundColor: 'rgba(226, 113, 29, 0.7)', pointRadius: 3, pointHoverRadius: 5, spanGaps: false }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'time', time: { unit: inferTimeScaleUnit(period), tooltipFormat: 'Pp', displayFormats: { millisecond: 'HH:mm:ss.SSS', second: 'HH:mm:ss', minute: 'HH:mm', hour: 'HH:mm', day: 'MMM d', week: 'MMM d', month: 'MMM yyyy', quarter: 'QQQ yyyy', year: 'yyyy', } }, title: { display: true, text: 'Time', color: 'var(--isabelline)' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(242, 233, 228, 0.1)' } }, y: { beginAtZero: true, title: { display: true, text: 'Response Time (ms)', color: 'var(--isabelline)' }, ticks: { color: '#ccc' }, grid: { color: 'rgba(242, 233, 228, 0.1)' } } }, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false, } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } } }); } catch (error) { console.error(`Error fetching/rendering history for ${endpointId}:`, error); modalErrorElement.textContent = `Error loading history: ${error.message}`; if (historyChart) { historyChart.destroy(); historyChart = null; } const ctx = document.getElementById('history-chart').getContext('2d'); ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); } }
         function inferTimeScaleUnit(period) { switch (period) { case '1h': return 'minute'; case '24h': return 'hour'; case '7d': return 'day'; default: return 'hour'; } }
-        function openHistoryModal(endpointId) { currentModalEndpointId = endpointId; const modal = document.getElementById('history-modal-overlay'); const title = document.getElementById('history-modal-title'); const endpointName = endpointNames[endpointId] || 'Unknown Endpoint'; title.textContent = `History: ${endpointName}`; document.querySelectorAll('.modal-controls button').forEach(btn => { btn.classList.remove('active'); if(btn.dataset.period === '24h') { btn.classList.add('active'); } }); currentHistoryPeriod = '24h'; modal.style.display = 'flex'; fetchAndRenderHistory(endpointId, currentHistoryPeriod); }
+        function openHistoryModalMaybe(event, endpointId) { if (event.target.closest('.endpoint-actions button')) { return; } openHistoryModal(endpointId); } // Checks if action button was clicked
+        function openHistoryModal(endpointId) { currentModalEndpointId = endpointId; const modal = document.getElementById('history-modal-overlay'); const title = document.getElementById('history-modal-title'); const epName = endpointData[endpointId]?.name || 'Unknown Endpoint'; title.textContent = `History: ${epName}`; document.querySelectorAll('.modal-controls button').forEach(btn => { btn.classList.remove('active'); if(btn.dataset.period === '24h') { btn.classList.add('active'); } }); currentHistoryPeriod = '24h'; modal.style.display = 'flex'; fetchAndRenderHistory(endpointId, currentHistoryPeriod); }
         function closeHistoryModal() { const modal = document.getElementById('history-modal-overlay'); modal.style.display = 'none'; currentModalEndpointId = null; if (historyChart) { historyChart.destroy(); historyChart = null; } const modalErrorElement = document.getElementById('history-modal-error'); if(modalErrorElement) modalErrorElement.textContent = ''; }
         function changeHistoryPeriod(buttonElement) { const newPeriod = buttonElement.dataset.period; if (newPeriod === currentHistoryPeriod || !currentModalEndpointId) { return; } currentHistoryPeriod = newPeriod; document.querySelectorAll('.modal-controls button').forEach(btn => btn.classList.remove('active')); buttonElement.classList.add('active'); fetchAndRenderHistory(currentModalEndpointId, currentHistoryPeriod); }
 
-
-        // --- NEW: Runtime Config Functions ---
-
-        // Function to create a new endpoint row from template
-        function createEndpointRow(endpointData) {
-            const template = document.getElementById('endpoint-row-template');
-            const clone = template.content.firstElementChild.cloneNode(true); // Clone the li element
-
-            clone.dataset.endpointId = endpointData.id;
-            clone.id = `endpoint-item-${endpointData.id}`;
-
-            const nameEl = clone.querySelector('.endpoint-name');
-            nameEl.textContent = endpointData.name;
-            nameEl.onclick = () => openHistoryModal(endpointData.id); // Attach modal opener
-
-            clone.querySelector('.endpoint-url').textContent = endpointData.url;
-            clone.querySelector('.endpoint-status').id = `status-${endpointData.id}`;
-            clone.querySelector('.endpoint-details').id = `details-${endpointData.id}`;
-            clone.querySelector('.endpoint-stats').id = `stats-${endpointData.id}`;
-
-            const deleteBtn = clone.querySelector('.endpoint-actions button');
-            deleteBtn.onclick = (event) => deleteEndpoint(event, endpointData.id); // Attach delete handler
-
-            // Update global names map
-            endpointNames[endpointData.id] = endpointData.name;
-
-            return clone;
-        }
-
-        // Function to find or create group list
-        function getOrCreateGroupList(groupName) {
-            const safeGroupName = (groupName || 'Default Group').replace(' ', '-').toLowerCase();
-            let listId = `endpoint-list-${safeGroupName}`;
-            let listElement = document.getElementById(listId);
-
-            if (!listElement) {
-                // Group doesn't exist yet, create it
-                console.log(`Creating new group container for: ${groupName}`);
-                const container = document.querySelector('.container'); // Append to main container
-
-                // Create group container div
-                const groupContainer = document.createElement('div');
-                groupContainer.className = 'group-container';
-                groupContainer.dataset.groupName = groupName || 'Default Group';
-
-                // Create header
-                const groupHeader = document.createElement('div');
-                groupHeader.className = 'group-header';
-                groupHeader.onclick = () => toggleGroup(groupHeader); // Make header clickable
-                groupHeader.innerHTML = `
-                    <span class="group-title">${groupName || 'Default Group'}</span>
-                    <span class="group-toggle">▼</span>`;
-                groupContainer.appendChild(groupHeader);
-
-                // Create content div and ul
-                const groupContent = document.createElement('div');
-                groupContent.className = 'group-content'; // Start expanded
-                listElement = document.createElement('ul');
-                listElement.className = 'endpoint-list';
-                listElement.id = listId;
-                groupContent.appendChild(listElement);
-                groupContainer.appendChild(groupContent);
-
-                 // Find the form container to insert before it (or append if nothing else exists)
-                 const addFormContainer = document.querySelector('.add-endpoint-form').closest('.group-container');
-                 if(addFormContainer) {
-                      container.insertBefore(groupContainer, addFormContainer);
-                 } else {
-                      container.appendChild(groupContainer); // Fallback
-                 }
-
-                 // Initialize toggle state if needed (usually starts expanded)
-                groupContent.style.maxHeight = groupContent.scrollHeight + "px";
-                setTimeout(() => { if (!groupContent.classList.contains('collapsed')) { groupContent.style.maxHeight = 'none'; } }, 500);
-
-            }
-            return listElement;
-        }
-
-        // Handle Add Endpoint Form Submission
+        // --- Runtime Config Functions ---
+        function createEndpointRow(endpointData) { /* ... Unchanged ... */ const template = document.getElementById('endpoint-row-template'); const clone = template.content.firstElementChild.cloneNode(true); clone.dataset.endpointId = endpointData.id; clone.id = `endpoint-item-${endpointData.id}`; clone.onclick = (event) => openHistoryModalMaybe(event, endpointData.id); clone.querySelector('.endpoint-name').textContent = endpointData.name; clone.querySelector('.endpoint-url').textContent = endpointData.url; clone.querySelector('.endpoint-status').id = `status-${endpointData.id}`; clone.querySelector('.endpoint-details').id = `details-${endpointData.id}`; clone.querySelector('.endpoint-stats').id = `stats-${endpointData.id}`; clone.querySelector('.endpoint-actions .edit-btn').onclick = (event) => openEditModal(event, endpointData.id); clone.querySelector('.endpoint-actions button[title="Delete Endpoint"]').onclick = (event) => deleteEndpoint(event, endpointData.id); return clone; }
+        function getOrCreateGroupList(groupName) { /* ... Unchanged ... */ const displayGroupName = groupName || 'Default Group'; const safeGroupName = displayGroupName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase(); let listId = `endpoint-list-${safeGroupName}`; let listElement = document.getElementById(listId); if (!listElement) { console.log(`Creating new group container for: ${displayGroupName}`); const container = document.querySelector('.container'); const groupContainer = document.createElement('div'); groupContainer.className = 'group-container'; groupContainer.dataset.groupName = displayGroupName; const groupHeader = document.createElement('div'); groupHeader.className = 'group-header'; groupHeader.onclick = () => toggleGroup(groupHeader); groupHeader.innerHTML = `<span class="group-title">${displayGroupName}</span><span class="group-toggle">▼</span>`; groupContainer.appendChild(groupHeader); const groupContent = document.createElement('div'); groupContent.className = 'group-content'; listElement = document.createElement('ul'); listElement.className = 'endpoint-list'; listElement.id = listId; groupContent.appendChild(listElement); groupContainer.appendChild(groupContent); const addFormContainer = document.querySelector('#add-endpoint-form').closest('.group-container'); container.insertBefore(groupContainer, addFormContainer || container.lastElementChild); groupContent.style.maxHeight = groupContent.scrollHeight + "px"; setTimeout(() => { if (!groupContent.classList.contains('collapsed')) { groupContent.style.maxHeight = 'none'; } }, 500); } return listElement; }
         const addForm = document.getElementById('add-endpoint-form');
         const addErrorElement = document.getElementById('add-endpoint-error');
-
         addForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent default form submission
-            addErrorElement.textContent = ''; // Clear previous errors
-            addErrorElement.style.display = 'none';
-
+            event.preventDefault(); addErrorElement.textContent = ''; addErrorElement.style.display = 'none';
             const formData = new FormData(addForm);
-            const endpointData = {
-                name: formData.get('name').trim(),
-                url: formData.get('url').trim(),
-                group: formData.get('group').trim() || 'Default Group' // Default group if empty
-            };
-
-            if (!endpointData.name || !endpointData.url) {
-                addErrorElement.textContent = 'Name and URL are required.';
-                addErrorElement.style.display = 'block';
-                return;
+            // Auto-prefix URL if scheme is missing
+            let url = formData.get('url').trim();
+            if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.includes('://')) { // Basic check
+                 url = 'https://' + url;
+                 console.log("Auto-prefixed URL:", url);
             }
-
-            // Basic URL validation (optional but recommended)
+            const endpointPayload = { name: formData.get('name').trim(), url: url, group: formData.get('group').trim() || 'Default Group', check_timeout_seconds: formData.get('check_timeout_seconds').trim() };
+            if (!endpointPayload.name || !endpointPayload.url) { addErrorElement.textContent = 'Name and URL required.'; addErrorElement.style.display = 'block'; return; }
+            if (endpointPayload.check_timeout_seconds === '') { delete endpointPayload.check_timeout_seconds; } else { endpointPayload.check_timeout_seconds = parseInt(endpointPayload.check_timeout_seconds, 10); if(isNaN(endpointPayload.check_timeout_seconds) || endpointPayload.check_timeout_seconds < 1) { addErrorElement.textContent = 'Timeout must be a number >= 1.'; addErrorElement.style.display = 'block'; return; }}
             try {
-                new URL(endpointData.url);
-            } catch (_) {
-                 addErrorElement.textContent = 'Invalid URL format.';
-                 addErrorElement.style.display = 'block';
-                return;
-            }
-
-
-            try {
-                const response = await fetch('/endpoints', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(endpointData),
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || `HTTP error ${response.status}`);
-                }
-
-                console.log('Endpoint added:', result); // result contains the added endpoint with ID
-
-                 // Dynamically add the new row to the correct group
-                 const listElement = getOrCreateGroupList(result.group);
-                 const newRow = createEndpointRow(result);
-                 // Remove "no endpoints" message if it exists
-                 const noEndpointsMsg = listElement.querySelector('#no-endpoints-message');
-                 if (noEndpointsMsg) noEndpointsMsg.remove();
-
-                 listElement.appendChild(newRow);
-
-                // Clear the form
-                addForm.reset();
-
-                 // Optional: scroll to the new group/item?
-                 // Optional: Briefly highlight the new row?
-
-            } catch (error) {
-                console.error('Error adding endpoint:', error);
-                addErrorElement.textContent = `Failed to add endpoint: ${error.message}`;
-                addErrorElement.style.display = 'block';
-            }
+                const response = await fetch('/endpoints', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify(endpointPayload), });
+                const result = await response.json(); if (!response.ok) { throw new Error(result.error || `HTTP error ${response.status}`); }
+                console.log('Endpoint added:', result); endpointData[result.id] = result; // Add to JS state
+                const listElement = getOrCreateGroupList(result.group); const newRow = createEndpointRow(result);
+                const noEndpointsMsg = listElement.querySelector('#no-endpoints-message'); if (noEndpointsMsg) noEndpointsMsg.remove();
+                listElement.appendChild(newRow); addForm.reset();
+            } catch (error) { console.error('Error adding endpoint:', error); addErrorElement.textContent = `Failed: ${error.message}`; addErrorElement.style.display = 'block'; }
         });
+        async function deleteEndpoint(event, endpointId) { /* ... Unchanged ... */ event.stopPropagation(); const epName = endpointData[endpointId]?.name || endpointId; if (!confirm(`PERMANENTLY DELETE endpoint "${epName}"?\n(Config will be saved. History remains in DB)`)) { return; } try { const response = await fetch(`/endpoints/${endpointId}`, { method: 'DELETE', }); const result = await response.json(); if (!response.ok) { throw new Error(result.error || `HTTP error ${response.status}`); } console.log('Endpoint deleted:', endpointId); const rowElement = document.getElementById(`endpoint-item-${endpointId}`); if (rowElement) { rowElement.remove(); } delete endpointData[endpointId]; } catch (error) { console.error('Error deleting endpoint:', error); alert(`Failed to delete: ${error.message}`); } }
 
+        // --- NEW: Edit Modal Functions ---
+        const editModalOverlay = document.getElementById('edit-modal-overlay');
+        const editForm = document.getElementById('edit-endpoint-form');
+        const editErrorElement = document.getElementById('edit-endpoint-error');
 
-        // Handle Delete Endpoint Click
-        async function deleteEndpoint(event, endpointId) {
-            event.stopPropagation(); // Prevent triggering row click (modal)
+        function openEditModal(event, endpointId) {
+             event.stopPropagation(); // Prevent row click (history modal)
+             const data = endpointData[endpointId];
+             if (!data) { console.error("Cannot edit: Endpoint data not found for", endpointId); return; }
 
-            if (!confirm(`Are you sure you want to delete endpoint ID: ${endpointId}?`)) {
-                return;
-            }
+             // Populate form
+             editForm.elements['id'].value = data.id;
+             editForm.elements['name'].value = data.name || '';
+             editForm.elements['url'].value = data.url || '';
+             editForm.elements['group'].value = data.group || '';
+             editForm.elements['check_timeout_seconds'].value = data.check_timeout_seconds || ''; // Empty if not set
+
+             editErrorElement.textContent = '';
+             editErrorElement.style.display = 'none';
+             editModalOverlay.style.display = 'flex'; // Show modal
+         }
+
+         function closeEditModal() {
+             editModalOverlay.style.display = 'none';
+             editForm.reset(); // Clear form on close
+             editErrorElement.textContent = '';
+             editErrorElement.style.display = 'none';
+         }
+
+        editForm.addEventListener('submit', async (event) => {
+             event.preventDefault();
+             editErrorElement.textContent = ''; editErrorElement.style.display = 'none';
+             const formData = new FormData(editForm);
+             const endpointId = formData.get('id');
+             let url = formData.get('url').trim();
+             if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.includes('://')) {
+                 url = 'https://' + url; // Auto-prefix
+             }
+             const endpointPayload = { name: formData.get('name').trim(), url: url, group: formData.get('group').trim() || 'Default Group', check_timeout_seconds: formData.get('check_timeout_seconds').trim() };
+
+             if (!endpointPayload.name || !endpointPayload.url) { editErrorElement.textContent = 'Name and URL required.'; editErrorElement.style.display = 'block'; return; }
+             if (endpointPayload.check_timeout_seconds === '') { delete endpointPayload.check_timeout_seconds; } else { endpointPayload.check_timeout_seconds = parseInt(endpointPayload.check_timeout_seconds, 10); if(isNaN(endpointPayload.check_timeout_seconds) || endpointPayload.check_timeout_seconds < 1) { editErrorElement.textContent = 'Timeout must be a number >= 1.'; editErrorElement.style.display = 'block'; return; }}
 
             try {
-                const response = await fetch(`/endpoints/${endpointId}`, {
-                    method: 'DELETE',
-                });
-
-                 const result = await response.json(); // Even errors might have JSON body
-
-                if (!response.ok) {
-                     throw new Error(result.error || `HTTP error ${response.status}`);
-                }
-
-                console.log('Endpoint deleted:', endpointId);
-
-                // Remove the row from the UI
-                const rowElement = document.getElementById(`endpoint-item-${endpointId}`);
+                const response = await fetch(`/endpoints/${endpointId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify(endpointPayload), });
+                const result = await response.json(); if (!response.ok) { throw new Error(result.error || `HTTP error ${response.status}`); }
+                console.log('Endpoint updated:', result);
+                // Update local JS state
+                endpointData[result.id] = result;
+                // Update UI row in place (more efficient than recreating)
+                const rowElement = document.getElementById(`endpoint-item-${result.id}`);
                 if (rowElement) {
-                     const parentList = rowElement.parentNode;
-                    rowElement.remove();
-                     // Optional: If group becomes empty, maybe remove group or add message?
-                     if (parentList && parentList.children.length === 0) {
-                         // Could add back a "no endpoints" message or hide group
-                         // console.log(`Group ${parentList.id} is now empty.`);
-                     }
+                     rowElement.querySelector('.endpoint-name').textContent = result.name;
+                     rowElement.querySelector('.endpoint-url').textContent = result.url;
+                     // TODO: Handle group change - moving the row element is complex, maybe just refresh list?
+                     // For now, group change only visible after full page refresh.
                 }
-                 // Remove from global names map
-                 delete endpointNames[endpointId];
+                closeEditModal(); // Close modal on success
+            } catch (error) { console.error('Error updating endpoint:', error); editErrorElement.textContent = `Failed: ${error.message}`; editErrorElement.style.display = 'block'; }
+         });
 
-            } catch (error) {
-                console.error('Error deleting endpoint:', error);
-                alert(`Failed to delete endpoint: ${error.message}`); // Simple alert for delete errors
-            }
-        }
 
+        // --- Floating Element Logic ---
+        const floatingTextsAndIcons = [ "🐳 Dockerized!", "🐙 GitOps FTW", "☸️ Kube?", "🛡️ Cyber... maybe", "🦑 ArgoCD Dreaming", "</> Spaghetti?", "🐍 Pythonic? Ish.", "📊 Grafana Wannabe", "🧪 Flasky & Fast?", "🚀 CI/CD... Soon™", "💾 Postgres Power!", "📈 99.9% Uptime?", "💡 Idea!", "🔥 It's Fine.", "👀 Watching...", "🕒 Time Flies", "🌐 Network Latency", "🚦 Red. Green. Red.", "🤔 What Was That?", "☕ Needs Coffee", "💾 Save Config!", "♻️ Refactor!", "🐛 Bug?", "✅ Test Pass?", "🔑 Secrets?", "📜 Check Logs", "📈 Metrics!", "💾 -> ☁️?", "👨‍💻 Code...", "😴 Sleepy?", "🤯 LLM Magic!", "✨ Vibe Coded ✨", "🖱️ You Still Click?", "⚡ Lightning Fast!", "🧠 Thinking...", "🤖 Bot At Work", "<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ' target='_blank' style='color: inherit; text-decoration: underline; pointer-events: auto;'>Click Me?</a>" ];
+        const floatingElementContainer = document.getElementById('floating-elements');
+        const numFloatingElements = 35; let floatingElements = []; let availableTexts = [...floatingTextsAndIcons];
+        function getRandomText() { if (availableTexts.length === 0) { availableTexts = [...floatingTextsAndIcons]; } const index = Math.floor(Math.random() * availableTexts.length); return availableTexts.splice(index, 1)[0]; }
+        function createFloatingElement(index) { const element = document.createElement('div'); element.classList.add('floating-element'); element.innerHTML = getRandomText(); const containerRect = floatingElementContainer.getBoundingClientRect(); const x = Math.random() * containerRect.width; const y = Math.random() * containerRect.height; const speedFactor = 110 + Math.random() * 70; /* Adjusted speed range: Slower */ const vx = (Math.random() - 0.5) * (containerRect.width / speedFactor); const vy = (Math.random() - 0.5) * (containerRect.height / speedFactor); element.style.left = `${x}px`; element.style.top = `${y}px`; floatingElementContainer.appendChild(element); setTimeout(() => element.classList.add('visible'), 50 + Math.random() * 100); return { el: element, x, y, vx, vy }; }
+        function animateFloatingElements() { const containerRect = floatingElementContainer.getBoundingClientRect(); floatingElements.forEach(item => { item.x += item.vx; item.y += item.vy; const elWidth = item.el.offsetWidth; const elHeight = item.el.offsetHeight; item.x = (item.x + elWidth > 0) ? (item.x % (containerRect.width + elWidth)) : (containerRect.width + elWidth); item.y = (item.y + elHeight > 0) ? (item.y % (containerRect.height + elHeight)) : (containerRect.height + elHeight); item.el.style.transform = `translate(${item.x - parseFloat(item.el.style.left || 0)}px, ${item.y - parseFloat(item.el.style.top || 0)}px)`; }); requestAnimationFrame(animateFloatingElements); }
 
         // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => { /* ... Polling, Group Init, Modal Listeners unchanged ... */
-             console.log("Uptimizer UI Initialized..."); fetchAndUpdateStatus(); setInterval(fetchAndUpdateStatus, POLLING_INTERVAL_MS); document.querySelectorAll('.group-content').forEach(content => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = content.scrollHeight + "px"; setTimeout(() => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = 'none'; } }, 500); } else { content.style.maxHeight = '0'; content.style.paddingTop = '0'; content.style.paddingBottom = '0'; content.style.borderTopWidth = '0'; const header = content.previousElementSibling; if(header) { const toggle = header.querySelector('.group-toggle'); if(toggle) toggle.style.transform = 'rotate(-90deg)'; } } }); const modalOverlay = document.getElementById('history-modal-overlay'); modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) { closeHistoryModal(); } }); document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modalOverlay.style.display === 'flex') { closeHistoryModal(); } });
-             // Initial setup for Add form collapse state
-              const addFormContent = document.querySelector('#add-endpoint-form').closest('.group-content');
-              if (addFormContent && addFormContent.classList.contains('collapsed')) {
-                  addFormContent.style.maxHeight = '0';
-                  addFormContent.style.paddingTop = '0';
-                  addFormContent.style.paddingBottom = '0';
-                  addFormContent.style.borderTopWidth = '0';
-                  const header = addFormContent.previousElementSibling;
-                  if(header) { const toggle = header.querySelector('.group-toggle'); if(toggle) toggle.style.transform = 'rotate(-90deg)';}
-              }
+        document.addEventListener('DOMContentLoaded', () => {
+             console.log("Uptimizer UI Initialized..."); fetchAndUpdateStatus(); setInterval(fetchAndUpdateStatus, POLLING_INTERVAL_MS);
+             document.querySelectorAll('.group-content').forEach(content => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = content.scrollHeight + "px"; setTimeout(() => { if (!content.classList.contains('collapsed')) { content.style.maxHeight = 'none'; } }, 500); } else { content.style.maxHeight = '0'; content.style.paddingTop = '0'; content.style.paddingBottom = '0'; content.style.borderTopWidth = '0'; const header = content.previousElementSibling; if(header) { const toggle = header.querySelector('.group-toggle'); if(toggle) toggle.style.transform = 'rotate(-90deg)'; } } }); const addFormContent = document.querySelector('#add-endpoint-form').closest('.group-content'); if (addFormContent && addFormContent.classList.contains('collapsed')) { addFormContent.style.maxHeight = '0'; addFormContent.style.paddingTop = '0'; addFormContent.style.paddingBottom = '0'; addFormContent.style.borderTopWidth = '0'; const header = addFormContent.previousElementSibling; if(header) { const toggle = header.querySelector('.group-toggle'); if(toggle) toggle.style.transform = 'rotate(-90deg)';} }
+             // History Modal Listeners
+             const historyModalOverlay = document.getElementById('history-modal-overlay'); historyModalOverlay.addEventListener('click', (event) => { if (event.target === historyModalOverlay) { closeHistoryModal(); } }); document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && historyModalOverlay.style.display === 'flex') { closeHistoryModal(); } });
+             // Edit Modal Listeners
+             const editModalOverlayRef = document.getElementById('edit-modal-overlay'); editModalOverlayRef.addEventListener('click', (event) => { if (event.target === editModalOverlayRef) { closeEditModal(); } }); document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && editModalOverlayRef.style.display === 'flex') { closeEditModal(); } });
+             // Floating Elements Init
+             for (let i = 0; i < numFloatingElements; i++) { floatingElements.push(createFloatingElement(i)); } requestAnimationFrame(animateFloatingElements);
         });
     </script>
 
