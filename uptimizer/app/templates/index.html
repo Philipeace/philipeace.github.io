@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uptimizer Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- More Floating Background Elements -->
+    <div class="floating-element float1">Docker</div>
+    <div class="floating-element float2">GitOps</div>
+    <div class="floating-element float3">K8s</div>
+    <div class="floating-element float4">CyberSec</div>
+    <div class="floating-element float5">ArgoCD</div>
+    <div class="floating-element float6"></></div>
+    <div class="floating-element float7">Python</div>
+    <div class="floating-element float8">Prometheus</div>
+    <div class="floating-element float9">Flask</div>
+    <div class="floating-element float10">CI/CD</div>
+
+
+    <div class="container">
+        <h1>Uptimizer - Keepin' Tabs on the Tabs</h1>
+
+        {% if endpoints %}
+            {# Group endpoints by the 'group' key #}
+            {% for group, items in endpoints | groupby('group') %}
+            <div class="group-container">
+                <div class="group-header" onclick="toggleGroup(this)">
+                    <span class="group-title">{{ group if group else 'Default Group' }}</span>
+                    <span class="group-toggle">▼</span> {# Indicator for collapsing state #}
+                </div>
+                <div class="group-content"> {# Content starts expanded #}
+                    <ul class="endpoint-list">
+                        {% for endpoint in items %}
+                        <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}">
+                            <div class="endpoint-name">{{ endpoint.name }}</div>
+                            <div class="endpoint-url">{{ endpoint.url }}</div>
+                            <div class="endpoint-status status-unknown" id="status-{{ endpoint.id }}">
+                                <!-- Status updated by JS --> PENDING
+                            </div>
+                            <div class="endpoint-details" id="details-{{ endpoint.id }}">
+                                <!-- Details updated by JS -->  
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="group-container">
+                 <div class="group-header"><span class="group-title">Info</span></div>
+                 <div class="group-content">
+                    <p>No endpoints configured yet. Add some to <code>app/config.json</code>!</p>
+                 </div>
+            </div>
+        {% endif %}
+
+        <!-- Statistics section will go here -->
+        <!-- Configuration section will go here -->
+
+    </div>
+
+    <footer>
+        <p>Uptimizer - Checking if your bits are beaming since... well, just now.</p>
+        <p id="footer-status">Initializing status checks...</p>
+    </footer>
+
+    <script>
+        // Use a shorter interval now that the backend isn't doing work on every poll
+        const POLLING_INTERVAL_MS = 5000; // Check every 5 seconds
+        const statusEndpoint = '/status';
+
+        function toggleGroup(headerElement) {
+            const content = headerElement.nextElementSibling;
+            const toggle = headerElement.querySelector('.group-toggle');
+            const isCollapsed = content.classList.toggle('collapsed'); // Toggle returns true if class was added
+
+            // Animate maxHeight for smooth collapse/expand
+            if (isCollapsed) {
+                content.style.maxHeight = '0';
+                content.style.paddingTop = '0';
+                content.style.paddingBottom = '0';
+                content.style.borderTopWidth = '0'; // Hide border when collapsed
+                toggle.style.transform = 'rotate(-90deg)';
+            } else {
+                // Set maxHeight to scrollHeight to animate open
+                content.style.maxHeight = content.scrollHeight + "px";
+                 content.style.paddingTop = ''; // Reset to CSS defaults
+                 content.style.paddingBottom = ''; // Reset to CSS defaults
+                 content.style.borderTopWidth = ''; // Reset to CSS defaults
+
+                 // Reset maxHeight after animation completes to allow dynamic content changes
+                 setTimeout(() => {
+                      if (!content.classList.contains('collapsed')) { // Check if still expanded
+                          content.style.maxHeight = 'none';
+                      }
+                 }, 500); // Match CSS transition duration
+                toggle.style.transform = 'rotate(0deg)';
+            }
+        }
+
+
+        function updateEndpointUI(endpointId, statusData) {
+            const statusElement = document.getElementById(`status-${endpointId}`);
+            const detailsElement = document.getElementById(`details-${endpointId}`);
+
+            if (!statusElement || !detailsElement) {
+                // This can happen briefly if config changes before restart
+                // console.warn(`UI elements for endpoint ID ${endpointId} not found.`);
+                return;
+            }
+
+            // Reset classes
+            statusElement.className = 'endpoint-status'; // Base class
+
+            let statusText = 'PENDING'; // Default to PENDING if no fresh data yet
+            let detailsText = ' '; // Default empty state
+
+            if (statusData) {
+                 statusText = statusData.status || 'UNKNOWN'; // API should always return status
+                 statusElement.classList.add(`status-${statusText.toLowerCase()}`);
+
+                 if (statusData.details) {
+                    if (statusData.status === 'UP' && statusData.details.response_time_ms !== undefined) {
+                        detailsText = `${statusData.details.response_time_ms} ms`;
+                    } else if (statusData.details.details) {
+                        detailsText = statusData.details.details; // Specific error
+                    } else if (statusData.status === 'DOWN' && statusData.details.status_code) {
+                         detailsText = `HTTP ${statusData.details.status_code}`;
+                    } else if (statusData.details.status_code) {
+                         detailsText = `HTTP ${statusData.details.status_code}`; // Fallback
+                    } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') {
+                         detailsText = 'Awaiting check...';
+                    }
+                 } else if (statusData.status === 'PENDING' || statusData.status === 'UNKNOWN') {
+                      detailsText = 'Awaiting check...';
+                 }
+            } else {
+                // No data from API for this endpoint ID (shouldn't happen with background checks)
+                statusElement.classList.add('status-unknown');
+                statusText = 'UNKNOWN';
+                detailsText = 'No status data';
+            }
+
+            statusElement.textContent = statusText;
+            detailsElement.innerHTML = detailsText; // Use innerHTML because of  
+        }
+
+        async function fetchAndUpdateStatus() {
+            // console.log("Fetching status updates..."); // Less verbose logging
+            const footerStatus = document.getElementById('footer-status');
+            let hasPending = false; // Track if any endpoints are still pending
+
+            try {
+                const response = await fetch(statusEndpoint);
+                if (!response.ok) {
+                    console.error(`Error fetching status: ${response.status} ${response.statusText}`);
+                    if (footerStatus) footerStatus.textContent = `Error fetching status: ${response.status}`;
+                    // Don't clear existing statuses on temporary fetch error
+                    return;
+                }
+                const statusResult = await response.json();
+                const statusData = statusResult.statuses; // Statuses are now nested
+
+                // Get all endpoint IDs currently displayed in the DOM
+                const displayedEndpointIds = new Set();
+                document.querySelectorAll('.endpoint-item').forEach(item => {
+                    if (item.dataset.endpointId) {
+                         displayedEndpointIds.add(item.dataset.endpointId);
+                    }
+                });
+
+
+                // Update UI for all known endpoints from the API response
+                for (const endpointId in statusData) {
+                     if (displayedEndpointIds.has(endpointId)) {
+                          updateEndpointUI(endpointId, statusData[endpointId]);
+                          if (statusData[endpointId]?.status === 'PENDING') {
+                              hasPending = true;
+                          }
+                     } else {
+                          // Can happen if config changed and container not restarted
+                          // console.warn(`Status received for endpoint ID ${endpointId} which is not in the DOM.`);
+                     }
+                }
+
+                // Mark endpoints in the DOM that were NOT in the API response as UNKNOWN
+                // This handles cases where an endpoint is removed from config but UI hasn't refreshed
+                displayedEndpointIds.forEach(domId => {
+                    if (!statusData[domId]) {
+                        console.warn(`Endpoint ID ${domId} is in the DOM but not in the latest status response. Marking as UNKNOWN.`);
+                        updateEndpointUI(domId, { status: 'UNKNOWN', details: { details: 'Removed from config?' } });
+                    }
+                });
+
+                const timestamp = new Date(statusResult.last_updated * 1000).toLocaleTimeString();
+                if (footerStatus) {
+                    footerStatus.textContent = hasPending
+                        ? `Status updated: ${timestamp} (Checks ongoing...)`
+                        : `Status updated: ${timestamp}`;
+                }
+
+            } catch (error) {
+                console.error("Network error or JSON parsing error fetching status:", error);
+                if (footerStatus) footerStatus.textContent = `Status update failed: ${error.message}`;
+                 // Don't clear existing statuses on temporary fetch error
+            }
+        }
+
+        // Initial fetch and start polling
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Uptimizer UI Initialized. Starting status polling...");
+            fetchAndUpdateStatus(); // Fetch immediately on load
+            setInterval(fetchAndUpdateStatus, POLLING_INTERVAL_MS); // Then poll periodically
+
+             // Initialize collapsed state for groups based on CSS default (expanded)
+             // Add smooth transition logic to toggleGroup
+             document.querySelectorAll('.group-content').forEach(content => {
+                // If NOT starting collapsed (default), set initial maxHeight for animation
+                 if (!content.classList.contains('collapsed')) {
+                      content.style.maxHeight = content.scrollHeight + "px";
+                       // Reset maxHeight after initial animation to allow dynamic content changes later
+                     setTimeout(() => {
+                         if (!content.classList.contains('collapsed')) {
+                              content.style.maxHeight = 'none';
+                         }
+                     }, 500); // Match CSS transition duration
+                 } else {
+                     // Ensure initially collapsed groups have 0 maxHeight
+                     content.style.maxHeight = '0';
+                     content.style.paddingTop = '0';
+                     content.style.paddingBottom = '0';
+                     content.style.borderTopWidth = '0';
+                     // Rotate toggle icon for initially collapsed groups
+                     const header = content.previousElementSibling;
+                     if(header) {
+                         const toggle = header.querySelector('.group-toggle');
+                         if(toggle) toggle.style.transform = 'rotate(-90deg)';
+                     }
+                 }
+             });
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+/* Basic Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* --- Animation Keyframes --- */
+@keyframes float {
+	0% { transform: translate(0,  0px) rotate(-2deg); opacity: 0.6; }
+	50%  { transform: translate(8px, 15px) rotate(3deg); opacity: 0.9; }
+	100%   { transform: translate(0, -0px) rotate(-2deg); opacity: 0.6; }
+}
+
+@keyframes float-reverse {
+	0% { transform: translate(0,  0px) rotate(2deg); opacity: 0.7; }
+	50%  { transform: translate(-10px, -12px) rotate(-4deg); opacity: 1.0; }
+	100%   { transform: translate(0, -0px) rotate(2deg); opacity: 0.7; }
+}
+
+/* --- Base & Theme --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Slightly lighter dark red gradient */
+    background: linear-gradient(135deg, #500000 0%, #300000 100%);
+    color: #ffffff; /* Pure White text for better pop */
+    line-height: 1.6;
+    padding: 20px;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* --- Floating Elements --- */
+.floating-element {
+    position: absolute;
+    font-size: 1.8em; /* Slightly larger */
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.08); /* Even fainter white */
+    user-select: none;
+    pointer-events: none;
+    z-index: 0;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Add subtle shadow */
+}
+
+/* More elements, varied speeds/delays/positions */
+.float1 { animation: float 7s ease-in-out infinite; top: 10%; left: 5%; animation-delay: 0s; }
+.float2 { animation: float-reverse 9s ease-in-out infinite; top: 25%; left: 80%; animation-delay: -2s; }
+.float3 { animation: float 11s ease-in-out infinite; top: 70%; left: 15%; animation-delay: -4s; }
+.float4 { animation: float-reverse 8s ease-in-out infinite; top: 85%; left: 60%; animation-delay: -1s; }
+.float5 { animation: float 10s ease-in-out infinite; top: 40%; left: 40%; animation-delay: -3s; }
+.float6 { animation: float-reverse 12s ease-in-out infinite; top: 55%; left: 90%; animation-delay: -5s; }
+.float7 { animation: float 8s ease-in-out infinite; top: 5%; left: 30%; animation-delay: -0.5s; }
+.float8 { animation: float-reverse 10s ease-in-out infinite; top: 65%; left: 75%; animation-delay: -2.5s; }
+.float9 { animation: float 9s ease-in-out infinite; top: 90%; left: 5%; animation-delay: -1.5s; }
+.float10 { animation: float-reverse 11s ease-in-out infinite; top: 15%; left: 55%; animation-delay: -4.5s; }
+
+
+/* --- Layout & Content --- */
+.container {
+    max-width: 1300px;
+    margin: auto;
+    overflow: visible;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+}
+
+h1, h2 {
+    color: #ffffff; /* Pure white headings */
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px #200000; /* Slightly stronger shadow for pop */
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 3em; /* Slightly larger */
+    border-bottom: 3px solid #8B0000;
+    padding-bottom: 15px;
+}
+
+h2 {
+    font-size: 1.8em;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    padding-left: 10px;
+    border-left: 4px solid #FFBF00; /* Accent Color: Warm Gold */
+}
+
+/* --- Endpoint Groups --- */
+.group-container {
+    margin-bottom: 25px;
+    background-color: rgba(60, 0, 0, 0.6); /* Slightly adjusted alpha */
+    border: 1px solid #8B0000;
+    border-radius: 8px;
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4); /* Slightly stronger shadow */
+    overflow: hidden;
+}
+
+.group-header {
+    padding: 14px 20px; /* Slightly more padding */
+    background-color: rgba(100, 0, 0, 0.8); /* Header base */
+    border-bottom: 1px solid #8B0000;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.group-header:hover {
+    background-color: rgba(120, 0, 0, 0.8);
+}
+
+.group-title {
+    font-size: 1.5em; /* Slightly larger */
+    font-weight: bold;
+    color: #FFBF00; /* Accent Color: Warm Gold */
+    text-shadow: 1px 1px 2px #300000;
+}
+
+.group-toggle {
+    font-size: 1.2em;
+    color: #FFBF00; /* Accent Color */
+    transition: transform 0.3s ease;
+}
+
+.group-content {
+    padding: 10px 20px 20px 20px;
+    overflow-y: auto;
+    transition: max-height 0.5s ease-out, padding 0.5s ease-out, border 0.5s ease-out;
+    border-top: 1px solid rgba(255, 191, 0, 0.2); /* Subtle gold line when open */
+}
+
+.group-content.collapsed {
+	max-height: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+    border-top: none;
+    overflow: hidden;
+}
+
+/* --- Endpoint Items (Grid Layout) --- */
+.endpoint-list {
+    list-style: none;
+    padding: 0;
+}
+
+.endpoint-item {
+    background-color: rgba(40, 0, 0, 0.7); /* Darker item background */
+    border: 1px solid #630000;
+    margin-bottom: 12px;
+    padding: 15px 20px;
+    border-radius: 5px;
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr 1fr; /* Name, URL, Status, Details */
+    gap: 15px;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.endpoint-item:hover {
+    background-color: rgba(60, 0, 0, 0.8);
+    border-left: 5px solid #FFBF00; /* Gold accent on hover */
+    padding-left: 15px; /* Adjust padding to keep content aligned */
+}
+
+.endpoint-name {
+    font-weight: bold;
+    color: #ffffff; /* Pure white */
+    font-size: 1.15em;
+}
+
+.endpoint-url {
+    font-size: 0.9em;
+    color: #dddddd; /* Slightly brighter gray */
+    word-break: break-all;
+    font-family: monospace;
+}
+
+/* --- Status & Details --- */
+.endpoint-status {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    text-align: center;
+    min-width: 80px;
+    transition: background-color 0.5s ease, color 0.5s ease;
+    color: #ffffff; /* White text for all statuses initially */
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3); /* Add subtle shadow */
+}
+
+.endpoint-details {
+    font-size: 0.9em; /* Slightly larger */
+    color: #FFBF00; /* Accent Color: Warm Gold */
+    text-align: right;
+    font-weight: 500;
+}
+
+/* Status Specific Backgrounds */
+.status-unknown, .status-pending { background-color: #6c757d; } /* Gray */
+.status-up { background-color: #28a745; } /* Green */
+.status-down { background-color: #dc3545; } /* Red */
+.status-error { background-color: #ff8c00; color: #ffffff; } /* Dark Orange for Error, white text */
+
+
+/* --- Footer --- */
+footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid #8B0000;
+    color: #cccccc; /* Brighter footer text */
+    font-size: 0.9em;
+    position: relative;
+    z-index: 1;
+}
+
+footer p {
+    margin-bottom: 5px;
+}
+
+#footer-status {
+    color: #FFBF00; /* Gold accent */
+    font-style: italic;
+}

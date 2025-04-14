@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  uptimizer_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uptimizer_app
+    ports:
+      - "5000:5000" # Map host port 5000 to container port 5000
+    volumes:
+      - ./app:/usr/src/app # Mount local app directory for development
+    environment:
+      - FLASK_ENV=development # Enable debug mode for development
+      # Pass the test server URL to the app
+      - TEST_SERVER_URL=http://uptimizer_test_server:8080
+    networks:
+      - uptimizer_net
+    depends_on:
+      - uptimizer_test_server
+
+  uptimizer_test_server:
+    build:
+      context: ./test_server
+      dockerfile: Dockerfile # Assumes a Dockerfile exists in test_server
+    container_name: uptimizer_test_server
+    ports:
+      - "8080:8080" # Expose test server port if needed for direct access
+    networks:
+      - uptimizer_net
+    volumes:
+      - ./test_server:/usr/src/app # Mount local test_server directory
+
+networks:
+  uptimizer_net:
+    driver: bridge

@@ -1,0 +1,38 @@
+{
+    "endpoints": [
+      {
+        "id": "local-test-ok",
+        "name": "Local Test Server (OK)",
+        "url": "http://uptimizer_test_server:8080/ok",
+        "group": "Test Environment"
+      },
+      {
+        "id": "local-test-fail",
+        "name": "Local Test Server (Fail)",
+        "url": "http://uptimizer_test_server:8080/fail",
+        "group": "Test Environment"
+      },
+      {
+        "id": "local-test-slow",
+        "name": "Local Test Server (Slow)",
+        "url": "http://uptimizer_test_server:8080/slow",
+        "group": "Test Environment"
+      },
+      {
+        "id": "external-exampleee",
+        "name": "External Example Site",
+        "url": "https://example.com",
+        "group": "External Services"
+      },
+      {
+        "id": "my_baddie2§$%",
+        "name": "myass",
+        "url": "https://iits-consulting.de",
+        "group": "Home<3"
+      }
+    ],
+    "settings": {
+      "check_interval_seconds": 15,
+      "data_retention_days": 180
+    }
+  }

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-wheel-metadata/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+dist/
+build/
+*.so
+
+# Docker
+.dockerignore
+
+# IDE specific
+.idea/
+.vscode/
+
+# Other
+*.log
+*.pot
+*.pytx
