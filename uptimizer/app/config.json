@@ -7,7 +7,11 @@
         "default_client": {
             "settings": {
                 "name": "Default Client",
-                "disable_floating_elements": false
+                "disable_floating_elements": false,
+                "client_type": "local",
+                "api_enabled": true,
+                "api_token": null,
+                "remote_url": null
             },
             "endpoints": [
                 {
@@ -42,7 +46,11 @@
         "another_client": {
             "settings": {
                 "name": "Another Client",
-                "disable_floating_elements": false
+                "disable_floating_elements": false,
+                "client_type": "local",
+                "api_enabled": false,
+                "api_token": null,
+                "remote_url": null
             },
             "endpoints": [
                 {
@@ -50,8 +58,47 @@
                     "name": "Google DNS Check",
                     "url": "https://dns.google/",
                     "group": "Infra"
+                },
+                {
+                    "id": "ep_c8d159e57d",
+                    "name": "test",
+                    "url": "http://uptimizer_test_server:8080/fail",
+                    "group": "test"
                 }
             ]
+        },
+        "client_e28595eb5ade": {
+            "settings": {
+                "name": "test",
+                "client_type": "local",
+                "disable_floating_elements": false,
+                "api_enabled": false,
+                "api_token": null,
+                "remote_url": null
+            },
+            "endpoints": []
+        },
+        "client_0d40db7fe944": {
+            "settings": {
+                "name": "test",
+                "client_type": "local",
+                "disable_floating_elements": false,
+                "api_enabled": false,
+                "api_token": null,
+                "remote_url": null
+            },
+            "endpoints": []
+        },
+        "client_5a16a1713ffc": {
+            "settings": {
+                "name": "test",
+                "client_type": "linked",
+                "disable_floating_elements": false,
+                "api_enabled": false,
+                "api_token": "test",
+                "remote_url": "https://test.com/uptimier"
+            },
+            "endpoints": []
         }
     }
 }

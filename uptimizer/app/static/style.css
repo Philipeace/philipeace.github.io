@@ -9,21 +9,38 @@
     --lighter-wine: #8a3e4dff; /* Lighter shade for gradients */
     --status-up-bg: #1e8a46ff; /* Custom darker green for UP */
     --status-unknown-bg: #5a5a5aff; /* Neutral gray */
-    --floating-color: rgba(226, 113, 29, 0.35); /* Faint Cocoa Brown - Slightly more visible */
+    --floating-color: rgba(226, 113, 29, 0.35);
     --tab-bg: rgba(0, 0, 0, 0.3);
     --tab-active-bg: rgba(11, 41, 6, 0.5);
     --tab-border: rgba(0, 0, 0, 0.6);
     --tab-active-border: var(--cocoa-brown);
+    --settings-bg: rgba(0, 0, 0, 0.15); /* Subtle background for settings */
+    --input-bg: rgba(0,0,0, 0.6); /* Darker input background */
 }
 
 /* Basic Reset */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* --- Animation Keyframes (Unchanged) --- */
-@keyframes float1 { 0% { transform: translate(0px, 0px) rotate(-2deg); } 100% { transform: translate(15px, 25px) rotate(3deg); } }
-@keyframes float2 { 0% { transform: translate(0px, 0px) rotate(2deg); } 100% { transform: translate(-20px, -18px) rotate(-4deg); } }
-@keyframes float3 { 0% { transform: translate(0px, 0px) rotate(1deg); } 100% { transform: translate(8px, -12px) rotate(-2deg); } }
-@keyframes float4 { 0% { transform: translate(0px, 0px) rotate(-1deg); } 100% { transform: translate(-10px, 14px) rotate(2deg); } }
+/* --- Animation Keyframes (Faster) --- */
+/* Shorten animation durations */
+@keyframes float-anim1 { 0% { transform: translate(0px, 0px) rotate(-2deg); } 100% { transform: translate(15px, 25px) rotate(3deg); } }
+@keyframes float-anim2 { 0% { transform: translate(0px, 0px) rotate(2deg); } 100% { transform: translate(-20px, -18px) rotate(-4deg); } }
+@keyframes float-anim3 { 0% { transform: translate(0px, 0px) rotate(1deg); } 100% { transform: translate(8px, -12px) rotate(-2deg); } }
+@keyframes float-anim4 { 0% { transform: translate(0px, 0px) rotate(-1deg); } 100% { transform: translate(-10px, 14px) rotate(2deg); } }
+@keyframes float-anim5 { 0% { transform: translate(0px, 0px) rotate(-2deg); } 100% { transform: translate(15px, 25px) rotate(3deg); } }
+@keyframes float-anim6 { 0% { transform: translate(0px, 0px) rotate(2deg); } 100% { transform: translate(-20px, -18px) rotate(-4deg); } }
+@keyframes float-anim7 { 0% { transform: translate(0px, 0px) rotate(1deg); } 100% { transform: translate(8px, -12px) rotate(-2deg); } }
+@keyframes float-anim8 { 0% { transform: translate(0px, 0px) rotate(-1deg); } 100% { transform: translate(-10px, 14px) rotate(2deg); } }
+
+/* Apply faster durations */
+.float-anim1 { animation: float-anim1 3.1s ease-in-out infinite alternate; }
+.float-anim2 { animation: float-anim2 3.5s ease-in-out infinite alternate; }
+.float-anim3 { animation: float-anim3 4.0s ease-in-out infinite alternate; }
+.float-anim4 { animation: float-anim4 3.3s ease-in-out infinite alternate; }
+.float-anim5 { animation: float-anim5 3.7s ease-in-out infinite alternate-reverse; }
+.float-anim6 { animation: float-anim6 4.2s ease-in-out infinite alternate-reverse; }
+.float-anim7 { animation: float-anim7 3.2s ease-in-out infinite alternate; }
+.float-anim8 { animation: float-anim8 3.8s ease-in-out infinite alternate; }
 
 /* --- Base & Theme --- */
 body {
@@ -31,98 +48,57 @@ body {
     background: linear-gradient(135deg, var(--darker-wine) 5%, var(--lighter-wine) 95%);
     color: var(--isabelline);
     line-height: 1.6; padding: 20px; min-height: 100vh;
-    position: relative; overflow-x: hidden; /* Allow vertical scroll */
+    position: relative; overflow-x: hidden;
 }
 
-/* --- Floating Elements --- */
+/* --- Floating Elements (Unchanged structure, faster animation applied above) --- */
 .floating-element-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0; transition: opacity 0.5s ease-out; }
 .floating-element { position: absolute; font-size: 2.2em; font-weight: bold; color: var(--floating-color); user-select: none; text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8); white-space: nowrap; will-change: transform; opacity: 0; transition: opacity 0.5s ease-in-out; }
-.floating-element a { pointer-events: auto !important; /* Ensure link is clickable */ }
+.floating-element a { pointer-events: auto !important; }
 .floating-element.visible { opacity: 0.8; }
-/* Slower animation durations (~70% speed of v1.12.2) - Use Keyframes */
-@keyframes float-anim1 { 0% { transform: translate(0px, 0px) rotate(-2deg); } 100% { transform: translate(15px, 25px) rotate(3deg); } }
-@keyframes float-anim2 { 0% { transform: translate(0px, 0px) rotate(2deg); } 100% { transform: translate(-20px, -18px) rotate(-4deg); } }
-@keyframes float-anim3 { 0% { transform: translate(0px, 0px) rotate(1deg); } 100% { transform: translate(8px, -12px) rotate(-2deg); } }
-@keyframes float-anim4 { 0% { transform: translate(0px, 0px) rotate(-1deg); } 100% { transform: translate(-10px, 14px) rotate(2deg); } }
-@keyframes float-anim5 { 0% { transform: translate(0px, 0px) rotate(-2deg); } 100% { transform: translate(15px, 25px) rotate(3deg); } } /* Reuse 1 */
-@keyframes float-anim6 { 0% { transform: translate(0px, 0px) rotate(2deg); } 100% { transform: translate(-20px, -18px) rotate(-4deg); } } /* Reuse 2 */
-@keyframes float-anim7 { 0% { transform: translate(0px, 0px) rotate(1deg); } 100% { transform: translate(8px, -12px) rotate(-2deg); } } /* Reuse 3 */
-@keyframes float-anim8 { 0% { transform: translate(0px, 0px) rotate(-1deg); } 100% { transform: translate(-10px, 14px) rotate(2deg); } } /* Reuse 4 */
-
-.float-anim1 { animation: float-anim1 9.1s ease-in-out infinite alternate; }
-.float-anim2 { animation: float-anim2 10.1s ease-in-out infinite alternate; }
-.float-anim3 { animation: float-anim3 11.3s ease-in-out infinite alternate; }
-.float-anim4 { animation: float-anim4 9.8s ease-in-out infinite alternate; }
-.float-anim5 { animation: float-anim5 10.6s ease-in-out infinite alternate-reverse; }
-.float-anim6 { animation: float-anim6 12.3s ease-in-out infinite alternate-reverse; }
-.float-anim7 { animation: float-anim7 9.6s ease-in-out infinite alternate; }
-.float-anim8 { animation: float-anim8 10.9s ease-in-out infinite alternate; }
-
-/* Style to hide floating elements */
 body.floating-disabled .floating-element-container { opacity: 0; pointer-events: none; }
 
 
 /* --- Layout & Content --- */
 .container { max-width: 1500px; margin: auto; overflow: visible; padding: 0 20px; position: relative; z-index: 1; }
-h1, h2 { color: var(--isabelline); margin-bottom: 15px; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
-h1 { text-align: center; margin-bottom: 20px; font-size: 3em; padding-bottom: 15px; } /* Reduced bottom margin */
-/* Global Settings Display */
-.global-settings-display { text-align: center; font-size: 0.9em; color: #d8cfca; margin-bottom: 10px; /* Reduced margin */ padding: 8px; background-color: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid rgba(0,0,0,0.4); }
+h1 { text-align: center; margin-bottom: 15px; font-size: 3em; padding-bottom: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
+/* Global Settings & Add Client Button */
+.top-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;}
+.global-settings-display { text-align: center; font-size: 0.9em; color: #d8cfca; padding: 8px 12px; background-color: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid rgba(0,0,0,0.4); flex-grow: 1; margin-right: 10px;}
 .global-settings-display span { color: var(--cocoa-brown); font-weight: bold; }
+.add-client-button-container button, .add-edit-form-container button { background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); border: 1px solid #000; color: var(--isabelline); font-weight: bold; padding: 10px 15px; border-radius: 4px; cursor: pointer; transition: background 0.2s ease; }
+.add-client-button-container button:hover, .add-edit-form-container button:hover { background: linear-gradient(135deg, #f57c20, var(--cocoa-brown)); }
+
 
 /* --- Client Tabs --- */
-.client-tab-container {
-    display: flex;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-    border-bottom: 2px solid var(--tab-active-border);
-}
-.client-tab {
-    padding: 10px 20px;
-    cursor: pointer;
-    background-color: var(--tab-bg);
-    border: 1px solid var(--tab-border);
-    border-bottom: none;
-    border-radius: 6px 6px 0 0;
-    margin-right: 5px;
-    margin-bottom: -2px; /* Overlap border-bottom */
-    color: var(--isabelline);
-    font-size: 1.1em;
-    font-weight: 500;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-    outline: none;
-}
-.client-tab:hover {
-    background-color: rgba(11, 41, 6, 0.3); /* Lighter green tint on hover */
-}
-.client-tab.active {
-    background: var(--tab-active-bg);
-    border-color: var(--tab-active-border);
-    border-bottom: 2px solid var(--tab-active-bg); /* Match container border */
-    color: var(--cocoa-brown);
-    font-weight: bold;
-    position: relative;
-    z-index: 2; /* Bring active tab border above container border */
-}
+.client-tab-container { display: flex; flex-wrap: wrap; margin-bottom: 15px; border-bottom: 2px solid var(--tab-active-border); }
+.client-tab { padding: 10px 20px; cursor: pointer; background-color: var(--tab-bg); border: 1px solid var(--tab-border); border-bottom: none; border-radius: 6px 6px 0 0; margin-right: 5px; margin-bottom: -2px; color: var(--isabelline); font-size: 1.1em; font-weight: 500; transition: background-color 0.3s ease, border-color 0.3s ease; outline: none; }
+.client-tab:hover { background-color: rgba(11, 41, 6, 0.3); }
+.client-tab.active { background: var(--tab-active-bg); border-color: var(--tab-active-border); border-bottom: 2px solid var(--tab-active-bg); color: var(--cocoa-brown); font-weight: bold; position: relative; z-index: 2; }
 
 /* --- Client Content Area --- */
-.client-tab-content {
-    display: none; /* Hidden by default */
-    padding-top: 20px; /* Add some space below tabs */
-    /* Add animation later if desired */
-}
-.client-tab-content.active {
-    display: block; /* Shown when active */
-}
+.client-tab-content { display: none; padding-top: 10px; /* Reduced space */ }
+.client-tab-content.active { display: block; }
+
+/* --- Client Settings Section --- */
+.client-settings-container { background-color: var(--settings-bg); border: 1px solid rgba(0,0,0,0.5); border-radius: 6px; padding: 15px; margin-bottom: 20px; box-shadow: inset 0 0 8px rgba(0,0,0,0.4); }
+.client-settings-container h4 { margin-top: 0; margin-bottom: 12px; color: var(--cocoa-brown); font-size: 1.3em; border-bottom: 1px solid rgba(226, 113, 29, 0.3); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+.client-settings-container p { margin-bottom: 8px; font-size: 0.95em; }
+.client-settings-container strong { color: var(--isabelline); }
+.client-settings-container small { color: #d8cfca; opacity: 0.8; display: block; margin-top: 5px; }
+.inline-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: var(--isabelline); padding: 2px 6px; margin-left: 8px; border-radius: 3px; cursor: pointer; font-size: 0.85em; vertical-align: middle; }
+.inline-btn:hover { background: rgba(255,255,255,0.2); }
+.inline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.delete-client-btn { color: var(--vermilion); font-size: 1.1em; padding: 1px 4px; }
+.edit-client-btn { color: var(--cocoa-brown); font-size: 1em; padding: 1px 4px;}
+.api-token-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); }
+.token-display-wrapper { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+.token-display-wrapper input[readonly] { flex-grow: 1; background-color: var(--input-bg); border-color: rgba(255,255,255,0.3); font-family: monospace; font-size: 0.9em; cursor: text; }
+.token-display-wrapper button { font-size: 1.1em; padding: 4px; line-height: 1; } /* Eye, Refresh icons */
 
 
 /* --- Endpoint Groups & Add Section --- */
-/* Add Endpoint Button Container */
-.add-edit-form-container { text-align: right; margin-bottom: 20px; margin-top: 10px;}
-.add-edit-form-container button { background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); border-color: #000; color: var(--isabelline); font-weight: bold; padding: 10px 15px; }
-.add-edit-form-container button:hover { background: linear-gradient(135deg, #f57c20, var(--cocoa-brown)); border-color: var(--isabelline); }
-
-/* Group Container Styling (within client content) */
+.add-edit-form-container { text-align: right; margin-bottom: 20px; margin-top: 0; } /* Moved add client btn */
 .group-container { margin-bottom: 25px; background: linear-gradient(135deg, rgba(11, 41, 6, 0.4) 0%, rgba(11, 41, 6, 0.6) 100%); border: 1px solid rgba(0,0,0,0.7); border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0,0,0,0.4); overflow: hidden; }
 .group-header { padding: 14px 20px; background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); border-bottom: 1px solid #000; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.3s ease; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); }
 .group-header:hover { background: linear-gradient(135deg, #f57c20, var(--cocoa-brown)); }
@@ -130,30 +106,27 @@ h1 { text-align: center; margin-bottom: 20px; font-size: 3em; padding-bottom: 15
 .group-toggle { font-size: 1.2em; color: var(--isabelline); transition: transform 0.3s ease; }
 .group-content { padding: 20px; overflow-y: auto; transition: max-height 0.5s ease-out, padding 0.5s ease-out, border 0.5s ease-out; border-top: 1px solid rgba(0, 0, 0, 0.5); }
 .group-content.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: none; overflow: hidden; }
-/* Style for clients/groups with no endpoints */
 .group-container.no-endpoints-client .group-header { background: rgba(11, 41, 6, 0.3); border-bottom: none; cursor: default; }
 .group-container.no-endpoints-client .group-header:hover { background: rgba(11, 41, 6, 0.3); }
 .italic-placeholder { font-style: italic; color: #d8cfca; font-size: 1.1em; font-weight: normal; }
+/* Specific styling for linked client info box */
+.linked-client-info .group-header { background: linear-gradient(135deg, #5a5a5a, #404040); cursor: default; } /* Gray header */
+.linked-client-info .group-header:hover { background: linear-gradient(135deg, #6c6c6c, #505050); }
+.linked-client-info .endpoint-list { padding-top: 10px; }
+.linked-client-info .endpoint-item { cursor: default; } /* Disable history click for linked items */
+.linked-client-info .endpoint-item:hover { border-left: 1px solid rgba(0,0,0,0.5); } /* No hover border */
 
 
-/* --- Forms (Unchanged) --- */
-/* .add-edit-form-container defined above */
+/* --- Forms (Generally unchanged styling) --- */
 
-/* --- Endpoint Items (Grid Layout - Simplified Columns) --- */
+/* --- Endpoint Items (Grid Layout - Unchanged) --- */
 .endpoint-list { list-style: none; padding: 0; }
-.endpoint-item {
-    background-color: rgba(11, 41, 6, 0.2); border: 1px solid rgba(0,0,0,0.5); margin-bottom: 12px;
-    padding: 12px 15px; border-radius: 5px; display: grid;
-    /* Adjusted columns: Name, URL, Status, Details, Stats, Actions */
-    grid-template-columns: minmax(150px, 1.5fr) minmax(200px, 2.5fr) minmax(80px, 0.7fr) minmax(100px, 1fr) minmax(90px, 0.8fr) minmax(50px, auto);
-    gap: 10px; align-items: center; transition: background-color 0.3s ease, border-left 0.3s ease;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.3); cursor: pointer;
-}
+.endpoint-item { background-color: rgba(11, 41, 6, 0.2); border: 1px solid rgba(0,0,0,0.5); margin-bottom: 12px; padding: 12px 15px; border-radius: 5px; display: grid; grid-template-columns: minmax(150px, 1.5fr) minmax(200px, 2.5fr) minmax(80px, 0.7fr) minmax(100px, 1fr) minmax(90px, 0.8fr) minmax(50px, auto); gap: 10px; align-items: center; transition: background-color 0.3s ease, border-left 0.3s ease; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); cursor: pointer; }
 .endpoint-item:hover { background-color: rgba(11, 41, 6, 0.4); border-left: 5px solid var(--cocoa-brown); }
 .endpoint-name { font-weight: bold; color: var(--isabelline); font-size: 1.1em; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .endpoint-url { font-size: 0.85em; color: #d8cfca; word-break: break-all; font-family: monospace; text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5); }
 
-/* --- Status, Details, Stats, Actions --- */
+/* --- Status, Details, Stats, Actions (Unchanged) --- */
 .endpoint-status { padding: 5px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase; font-size: 0.8em; text-align: center; min-width: 70px; transition: background-color 0.5s ease, color 0.5s ease; color: var(--isabelline); border: 1px solid rgba(0,0,0,0.5); text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5); box-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
 .endpoint-details { font-size: 0.85em; color: var(--cocoa-brown); text-align: right; font-weight: 500; text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7); background: linear-gradient(to left, rgba(226, 113, 29, 0.1), transparent); padding-right: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .endpoint-stats { font-size: 0.85em; color: var(--isabelline); text-align: right; font-weight: bold; text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7); background: linear-gradient(to left, rgba(242, 233, 228, 0.1), transparent); padding-right: 5px; white-space: nowrap;}
@@ -164,111 +137,65 @@ h1 { text-align: center; margin-bottom: 20px; font-size: 3em; padding-bottom: 15
 .endpoint-actions button.edit-btn { color: var(--cocoa-brown); font-size: 1em; }
 .endpoint-actions button.delete-btn { color: var(--vermilion); font-size: 1.2em; }
 .endpoint-actions button:hover { opacity: 1; }
-/* Ensure clicks on status/details/stats don't trigger history modal if they overlap actions slightly */
 .endpoint-item > div:not(.endpoint-actions) { pointer-events: none; }
-/* Exception for the row itself for hover/click */
 .endpoint-item { pointer-events: auto; }
-
-
-/* Status Specific Backgrounds */
 .status-unknown, .status-pending { background-color: var(--status-unknown-bg); } .status-up { background-color: var(--status-up-bg); } .status-down { background-color: var(--vermilion); } .status-error { background-color: var(--cocoa-brown); }
 
-/* --- Modals (History, Edit, Confirm) - Largely Unchanged --- */
+/* --- Modals (General structure unchanged, Add Client Modal added) --- */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); padding: 20px; }
-/* Restore original sizing approach */
-.modal-content { background: linear-gradient(135deg, var(--dark-green), #051402); padding: 25px; border-radius: 10px; border: 1px solid #000; box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6); position: relative; display: flex; flex-direction: column; width: 80%; /* Base width */ max-height: 90vh; overflow-y: auto; }
-/* Override max-width for specific modals */
-.history-modal .modal-content { max-width: 1200px; /* Wider */ }
+.modal-content { background: linear-gradient(135deg, var(--dark-green), #051402); padding: 25px; border-radius: 10px; border: 1px solid #000; box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6); position: relative; display: flex; flex-direction: column; width: 80%; max-height: 90vh; overflow-y: auto; }
+.history-modal .modal-content { max-width: 1200px; }
 .edit-modal .modal-content { max-width: 650px; }
-.confirm-modal .modal-content { max-width: 450px; width: auto; /* Smaller width for confirm */ }
-
+.confirm-modal .modal-content { max-width: 450px; width: auto; }
+.add-client-modal .modal-content { max-width: 550px; } /* Size for Add Client Modal */
 
 .modal-close-btn { position: absolute; top: 10px; right: 15px; background: var(--cocoa-brown); border: 1px solid #000; color: #000; font-size: 1.2em; font-weight: bold; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; line-height: 1; z-index: 1; }
 .modal-close-btn:hover { background: #b55a17; }
 .modal-header { margin-bottom: 15px; border-bottom: 1px solid var(--cocoa-brown); padding-bottom: 10px; flex-shrink: 0; }
 .modal-title { font-size: 1.6em; color: var(--isabelline); text-shadow: 1px 1px 2px #000; }
 .modal-body { flex-grow: 1; position: relative; overflow: hidden; /* History needs this */ }
-.modal-body.confirm-body { overflow: visible; padding: 15px 0; text-align: center; /* Center confirm message */ }
+.modal-body.confirm-body { overflow: visible; padding: 15px 0; text-align: center; }
 .modal-chart-container { position: relative; width: 100%; height: 100%; min-height: 300px; }
 .modal-controls { margin-bottom: 15px; text-align: center; flex-shrink: 0; }
 .modal-controls button { background: linear-gradient(135deg, rgba(0,0,0, 0.5), rgba(0,0,0, 0.7)); color: var(--isabelline); border: 1px solid var(--cocoa-brown); padding: 5px 10px; margin: 0 5px; cursor: pointer; border-radius: 4px; transition: background 0.2s ease; }
 .modal-controls button:hover { background: linear-gradient(135deg, rgba(51,51,51, 0.7), rgba(51,51,51, 0.9)); }
 .modal-controls button.active { background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); color: #000; font-weight: bold; }
+/* Modal Forms */
 .modal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; align-items: center; padding-top: 10px; }
+.add-client-modal .modal-form { grid-template-columns: 1fr; } /* Single column for add client */
 .modal-form label { color: var(--isabelline); }
+.modal-form .form-group-full { grid-column: 1 / -1; } /* Span full width in 2-col layout */
+#linked-client-fields { display: none; /* Hidden by default */ margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); }
+#linked-client-fields .form-group { margin-bottom: 10px; }
 .modal-form button[type="submit"] { background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); border-color: #000; color: var(--isabelline); font-weight: bold; padding: 10px 15px; margin-top: 10px; grid-column: 1 / -1; /* Span full width */ }
 .modal-form button[type="submit"]:hover { background: linear-gradient(135deg, #f57c20, var(--cocoa-brown)); }
-.form-error-msg { grid-column: 1 / -1; color: var(--vermilion); margin-top: 0; font-weight: bold; display: none; text-align: center; padding-top: 5px; } /* Adjusted span */
-#modal-error-display { text-align: center; margin-top: 10px; font-weight: bold; display: none; } /* For history modal error */
+.form-error-msg { grid-column: 1 / -1; color: var(--vermilion); margin-top: 0; font-weight: bold; display: none; text-align: center; padding-top: 5px; }
+#modal-error-display { text-align: center; margin-top: 10px; font-weight: bold; display: none; }
 
-.modal-footer { margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-shrink: 0; } /* Center buttons */
+.modal-footer { margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-shrink: 0; }
 .modal-footer button { padding: 8px 15px; font-weight: bold; }
-/* Use specific IDs/Classes if needed for different confirm modals */
-#confirm-yes-btn { background: var(--vermilion); border-color: #000; color: var(--isabelline); } /* Delete uses RED */
+#confirm-yes-btn { background: var(--vermilion); border-color: #000; color: var(--isabelline); }
 #confirm-yes-btn:hover { background: #c83e2b; }
-#reload-confirm-refresh-btn { background: var(--cocoa-brown); border-color: #000; color: var(--isabelline); } /* Reload uses ORANGE */
+#reload-confirm-refresh-btn { background: var(--cocoa-brown); border-color: #000; color: var(--isabelline); }
 #reload-confirm-refresh-btn:hover { background: #f57c20; }
-
 #confirm-no-btn, #reload-confirm-close-btn { background: var(--status-unknown-bg); border-color: #000; color: var(--isabelline); }
 #confirm-no-btn:hover, #reload-confirm-close-btn:hover { background: #6c757d; }
-
 
 /* --- Footer --- */
 footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #000000; color: #d8cfca; font-size: 0.9em; position: relative; z-index: 1; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap; }
 footer p { margin-bottom: 5px; } #footer-status { color: var(--cocoa-brown); font-style: italic; }
-/* Settings Toggle Button */
 #settings-toggles { display: flex; gap: 10px; }
 #toggle-floating, #refresh-config-btn { background-color: rgba(0,0,0,0.4); border: 1px solid var(--cocoa-brown); color: var(--isabelline); font-size: 0.8em; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 #toggle-floating:hover, #refresh-config-btn:hover { background-color: rgba(0,0,0,0.6); }
 
 
 /* --- Interactive Elements --- */
-button, input[type="text"], input[type="url"], input[type="number"], select, textarea { background-color: rgba(0,0,0, 0.5); color: var(--isabelline); border: 1px solid var(--cocoa-brown); padding: 8px 12px; border-radius: 4px; font-family: inherit; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); outline-color: var(--cocoa-brown); }
-button:hover:not(.modal-close-btn):not(.client-tab) { background: linear-gradient(135deg, rgba(51,51,51, 0.7), rgba(51,51,51, 0.9)); border-color: #f57c20; cursor: pointer; } /* Exclude close and tab buttons */
+button, input[type="text"], input[type="url"], input[type="number"], select, textarea { background-color: var(--input-bg); color: var(--isabelline); border: 1px solid var(--cocoa-brown); padding: 8px 12px; border-radius: 4px; font-family: inherit; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3); outline-color: var(--cocoa-brown); }
+button:hover:not(.modal-close-btn):not(.client-tab):not(.inline-btn) { background: linear-gradient(135deg, rgba(51,51,51, 0.7), rgba(51,51,51, 0.9)); border-color: #f57c20; cursor: pointer; } /* Exclude special buttons */
 input:focus, select:focus, textarea:focus { border-color: #f57c20; box-shadow: 0 0 5px rgba(226, 113, 29, 0.5); }
+select { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%23F2E9E4%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%27%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2.5em; } /* Basic dropdown arrow */
 .url-warning { font-size: 0.8em; color: var(--cocoa-brown); display: inline-block; margin-left: 10px; opacity: 0.8; font-style: italic;}
 
 /* Responsive adjustments */
-@media (max-width: 1200px) {
-    .endpoint-item {
-        grid-template-columns: minmax(120px, 1fr) minmax(150px, 2fr) minmax(70px, auto) minmax(80px, auto) minmax(70px, auto) minmax(50px, auto);
-        gap: 8px;
-        padding: 10px;
-    }
-    .endpoint-name { font-size: 1em; }
-    .endpoint-url, .endpoint-status, .endpoint-details, .endpoint-stats { font-size: 0.8em; }
-}
-
-@media (max-width: 768px) {
-     h1 { font-size: 2.2em; margin-bottom: 20px; }
-     .global-settings-display { font-size: 0.8em; margin-bottom: 20px;}
-     .client-tab { font-size: 1em; padding: 8px 12px;}
-     .group-title { font-size: 1.3em;}
-     .endpoint-item {
-        grid-template-columns: 1fr; /* Stack columns */
-        gap: 5px;
-        text-align: left;
-        border-left: 5px solid rgba(0,0,0,0.5); /* Reset hover border */
-        cursor: default; /* Disable row click for history on small screens? Maybe keep? */
-    }
-     .endpoint-item:hover {
-         border-left: 5px solid var(--cocoa-brown); /* Keep hover highlight */
-     }
-    .endpoint-item > div { /* Target direct children divs */
-        text-align: left;
-        padding: 2px 0;
-        background: none; /* Remove individual gradients */
-        /* Reset specific styles */
-        min-width: 0;
-        white-space: normal; /* Allow wrapping */
-    }
-    .endpoint-url::before { content: "URL: "; font-weight: bold; color: var(--isabelline); }
-    .endpoint-status { display: inline-block; padding: 3px 6px; }
-    .endpoint-status::before { content: "Status: "; font-weight: bold; color: var(--isabelline); }
-    .endpoint-details::before { content: "Details: "; font-weight: bold; color: var(--isabelline); }
-    .endpoint-stats::before { content: "Stats: "; font-weight: bold; color: var(--isabelline); }
-    .endpoint-actions { justify-content: flex-start; padding-top: 5px; }
-    .modal-form { grid-template-columns: 1fr; } /* Stack form fields */
-    /* .form-group-full { grid-column: auto; } Reset span not needed with 1 column */
-    footer { flex-direction: column; gap: 10px; }
-}
+@media (max-width: 1200px) { /* ... (endpoint grid adjustments unchanged) ... */ .endpoint-item { grid-template-columns: minmax(120px, 1fr) minmax(150px, 2fr) minmax(70px, auto) minmax(80px, auto) minmax(70px, auto) minmax(50px, auto); gap: 8px; padding: 10px; } .endpoint-name { font-size: 1em; } .endpoint-url, .endpoint-status, .endpoint-details, .endpoint-stats { font-size: 0.8em; } }
+@media (max-width: 768px) { /* ... (mobile stacking adjustments unchanged) ... */ h1 { font-size: 2.2em; margin-bottom: 20px; } .top-controls { flex-direction: column; align-items: stretch; } .global-settings-display { font-size: 0.8em; margin-bottom: 10px; margin-right: 0;} .client-tab { font-size: 1em; padding: 8px 12px;} .client-settings-container h4 { font-size: 1.1em; } .group-title { font-size: 1.3em;} .endpoint-item { grid-template-columns: 1fr; gap: 5px; text-align: left; border-left: 5px solid rgba(0,0,0,0.5); cursor: default; } .endpoint-item:hover { border-left: 5px solid var(--cocoa-brown); } .endpoint-item > div { text-align: left; padding: 2px 0; background: none; min-width: 0; white-space: normal; } .endpoint-url::before { content: "URL: "; font-weight: bold; color: var(--isabelline); } .endpoint-status { display: inline-block; padding: 3px 6px; } .endpoint-status::before { content: "Status: "; font-weight: bold; color: var(--isabelline); } .endpoint-details::before { content: "Details: "; font-weight: bold; color: var(--isabelline); } .endpoint-stats::before { content: "Stats: "; font-weight: bold; color: var(--isabelline); } .endpoint-actions { justify-content: flex-start; padding-top: 5px; } .modal-form { grid-template-columns: 1fr; } footer { flex-direction: column; gap: 10px; } }
