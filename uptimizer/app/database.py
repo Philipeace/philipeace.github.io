@@ -1,91 +1,28 @@
 import os
-import psycopg2
-import time
 from datetime import datetime, timedelta, timezone
-from psycopg2 import pool, OperationalError, InterfaceError
-
-# --- Database Connection Pool ---
-db_pool = None
-
-def get_db_connection_pool():
-    """Initializes and returns the connection pool."""
-    global db_pool
-    if db_pool is None:
-        retries = 5; delay = 2
-        while retries > 0:
-            try:
-                print("Initializing database connection pool...")
-                db_pool = psycopg2.pool.SimpleConnectionPool(
-                    1, 10,
-                    user=os.getenv('DB_USER', 'uptimizer_user'),
-                    password=os.getenv('DB_PASSWORD', 'supersecretpassword'),
-                    host=os.getenv('DB_HOST', 'localhost'),
-                    port=os.getenv('DB_PORT', '5432'),
-                    database=os.getenv('DB_NAME', 'uptimizer_data')
-                )
-                print("Database connection pool initialized.")
-                conn = db_pool.getconn(); print("Successfully connected to database."); db_pool.putconn(conn)
-                break
-            except OperationalError as e:
-                retries -= 1; print(f"WARN: Database connection failed: {e}. Retrying in {delay}s... ({retries} retries left)")
-                if retries == 0: print(f"FATAL: Could not connect to database after multiple retries."); db_pool = None; break
-                time.sleep(delay)
-            except Exception as e: print(f"FATAL: Unexpected error initializing database pool: {e}"); db_pool = None; break
-    return db_pool
-
-def get_connection():
-    """Gets a connection from the pool."""
-    pool = get_db_connection_pool()
-    if pool:
-        try: return pool.getconn()
-        except Exception as e: print(f"Error getting DB connection: {e}"); return None
-    return None
-
-def release_connection(conn):
-    """Releases a connection back to the pool."""
-    pool = get_db_connection_pool()
-    if pool and conn:
-        try: pool.putconn(conn)
-        except InterfaceError: pass # Connection likely closed
-        except Exception as e: print(f"Error putting connection back to pool: {e}")
-
-def close_db_pool():
-     """Closes all connections in the pool."""
-     global db_pool
-     if db_pool:
-        print("Closing database connection pool...");
-        try: db_pool.closeall()
-        except Exception as e: print(f"Error during db_pool.closeall(): {e}")
-        db_pool = None; print("Database connection pool closed.")
-
-# --- Database Schema Initialization ---
-def init_db():
-    """Initializes the database schema."""
-    conn = get_connection()
-    if not conn: print("ERROR: Cannot init DB schema, no connection."); return
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS status_history (
-                    id SERIAL PRIMARY KEY, timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    endpoint_id VARCHAR(255) NOT NULL, status VARCHAR(50) NOT NULL,
-                    status_code INTEGER, response_time_ms INTEGER, details TEXT);
-            """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_status_history_endpoint_ts ON status_history (endpoint_id, timestamp DESC);")
-            conn.commit(); print("DB schema initialized.")
-    except Exception as e:
-        print(f"Error initializing DB schema: {e}")
-        try: conn.rollback()
-        except Exception as re: print(f"Error during rollback: {re}")
-    finally: release_connection(conn)
+from sqlalchemy import select, desc, and_, func
+# Use absolute imports and import the models module itself
+from app import models # Import the module to access flags and functions directly
+from app.models import Session, StatusHistory, session_scope # Keep specific imports
 
 # --- Data Persistence ---
 last_saved_status = {}
-def save_status_change(endpoint_id, check_result):
-    """Saves the status check result to the database if it changed meaningfully or is UP."""
-    global last_saved_status; conn = get_connection()
-    if not conn: print(f"ERROR: Cannot save status for {endpoint_id}, no DB connection."); return
 
+def _ensure_tables_exist():
+    """Internal helper to attempt table creation if not already done."""
+    if models.ENGINE_INITIALIZED and not models.DB_TABLES_CREATED:
+        print("DB INFO: Attempting table creation from DB function...")
+        models.create_db_tables() # This will set DB_TABLES_CREATED if successful
+
+def save_status_change(endpoint_id, check_result):
+    """Saves the status check result to the database using SQLAlchemy if DB is ready."""
+    _ensure_tables_exist() # Attempt table creation if needed
+
+    # Check readiness flags directly from the models module at runtime
+    if not models.ENGINE_INITIALIZED or not models.DB_TABLES_CREATED:
+        return # Silently return if DB not ready or tables couldn't be created
+    # ----------------------------------------------------------------------
+    global last_saved_status
     current_status = check_result.get('status', 'UNKNOWN')
     current_details = check_result.get('details'); current_status_code = check_result.get('status_code')
     current_response_time = check_result.get('response_time_ms')
@@ -95,71 +32,122 @@ def save_status_change(endpoint_id, check_result):
                        prev_saved_status == current_status and prev_saved_info.get('details') != current_details)
     should_save = (current_status == 'UP' or current_status != prev_saved_status or
                    prev_saved_info is None or details_changed)
-
-    if not should_save: release_connection(conn); return
+    if not should_save: return
     try:
-        with conn.cursor() as cur:
-            cur.execute("""INSERT INTO status_history (endpoint_id, status, status_code, response_time_ms, details)
-                           VALUES (%s, %s, %s, %s, %s)""",
-                        (endpoint_id, current_status, current_status_code, current_response_time, current_details))
-            conn.commit(); last_saved_status[endpoint_id] = {'status': current_status, 'details': current_details}
-    except Exception as e:
-        print(f"Error saving status for {endpoint_id}: {e}")
-        try: conn.rollback()
-        except Exception as re: print(f"Error during rollback: {re}")
-    finally: release_connection(conn)
+        with session_scope() as session:
+            # Check session explicitly inside scope
+            if session is None:
+                 # Warning already printed by session_scope if engine is down
+                 return # Return if session couldn't be created
+            # ---------------------------------------------
+            new_history = StatusHistory( endpoint_id=endpoint_id, status=current_status, status_code=current_status_code, response_time_ms=current_response_time, details=current_details )
+            session.add(new_history)
+            last_saved_status[endpoint_id] = {'status': current_status, 'details': current_details}
+    except Exception as e: print(f"SQLAlchemy Error saving status for {endpoint_id}: {e}")
 
 # --- Statistics & History Retrieval ---
 def get_stats_last_24h(endpoint_id):
-    """Calculates uptime percentage for the last 24 hours for a given endpoint."""
-    conn = get_connection()
-    if not conn: return {"error": "DB connection unavailable"}
+    """Calculates uptime percentage for the last 24 hours using SQLAlchemy, if DB is ready."""
+    _ensure_tables_exist() # Attempt table creation if needed
+
+    # Check readiness flags directly from the models module at runtime
+    if not models.ENGINE_INITIALIZED or not models.DB_TABLES_CREATED:
+        return {"error": "DB N/A", "uptime_percentage_24h": None}
+    # ----------------------------------------------------------------------
     results = {"uptime_percentage_24h": None, "error": None}
     try:
-        end_time = datetime.now(timezone.utc); start_time = end_time - timedelta(hours=24)
-        with conn.cursor() as cur:
-            cur.execute("""SELECT timestamp, status FROM status_history
-                           WHERE endpoint_id = %s AND timestamp >= %s AND timestamp <= %s
-                           ORDER BY timestamp ASC""", (endpoint_id, start_time, end_time))
-            rows = cur.fetchall()
+        with session_scope() as session:
+             # Check session explicitly inside scope
+            if session is None:
+                 results["error"] = "DB Session N/A"
+                 return results
+            # ---------------------------------------------
+            end_time = datetime.now(timezone.utc); start_time = end_time - timedelta(hours=24)
+            query = ( select(StatusHistory.timestamp, StatusHistory.status)
+                     .where( and_( StatusHistory.endpoint_id == endpoint_id, StatusHistory.timestamp >= start_time, StatusHistory.timestamp <= end_time ) )
+                     .order_by(StatusHistory.timestamp.asc()) )
+            rows = session.execute(query).fetchall()
+
             if not rows: results["error"] = "No data in last 24h"; return results
-            if len(rows) == 1: results["error"] = "Insufficient data points"; return results
+            # Calculation requires at least one point to determine state at boundaries
+            # if len(rows) < 1: # Allow calculation with >= 1 points
+            #     results["error"] = "Insufficient data points"; return results
 
             total_time_up = timedelta(0)
-            for i in range(len(rows) - 1):
-                if rows[i][1] == 'UP': duration = rows[i+1][0] - rows[i][0]; total_time_up += duration
-            last_record_ts, last_record_status = rows[-1]
-            if last_record_status == 'UP': duration_after_last = end_time - last_record_ts; total_time_up += duration_after_last
-            total_duration = timedelta(hours=24)
+            current_time = start_time # Start tracking from the beginning of the 24h window
+
+            # Consider state *before* the first record within the window
+            # Need the last record *before* start_time to know initial state
+            first_record_time = rows[0].timestamp
+            query_prev = (select(StatusHistory.status)
+                          .where(and_(StatusHistory.endpoint_id == endpoint_id, StatusHistory.timestamp < start_time))
+                          .order_by(StatusHistory.timestamp.desc())
+                          .limit(1))
+            prev_row = session.execute(query_prev).fetchone()
+            initial_status = prev_row.status if prev_row else 'UNKNOWN' # Assume UNKNOWN if no prior data
+
+            if initial_status == 'UP':
+                # If state before window was UP, count time from start_time to first record
+                duration = first_record_time - start_time
+                if duration.total_seconds() > 0: total_time_up += duration
+
+            current_time = first_record_time # Advance time to the first record
+
+            # Iterate through records within the window
+            for i in range(len(rows)):
+                record_time = rows[i].timestamp
+                record_status = rows[i].status
+
+                # Duration from previous event (or start_time/initial_status) to this one
+                time_since_last_event = record_time - current_time
+
+                # Add to uptime if the status *during* this interval was UP
+                # The status *before* this record determines the state of the interval
+                status_during_interval = rows[i-1].status if i > 0 else initial_status
+                if status_during_interval == 'UP' and time_since_last_event.total_seconds() > 0:
+                    total_time_up += time_since_last_event
+
+                current_time = record_time # Update current time
+
+            # Consider state *after* the last record until end_time
+            last_record_status = rows[-1].status
+            if last_record_status == 'UP':
+                duration_after_last = end_time - current_time
+                if duration_after_last.total_seconds() > 0: total_time_up += duration_after_last
+
+            total_duration = end_time - start_time
             if total_duration.total_seconds() > 0:
                 uptime_percentage = (total_time_up.total_seconds() / total_duration.total_seconds()) * 100
                 results["uptime_percentage_24h"] = round(uptime_percentage, 2)
             else: results["error"] = "Zero duration"
+
     except Exception as e:
-        print(f"Error calculating stats for {endpoint_id}: {e}")
-        results["error"] = "Calculation error"
-        try: conn.rollback()
-        except Exception as re: print(f"Error during rollback: {re}")
-    finally: release_connection(conn)
+        print(f"SQLAlchemy Error calculating stats for {endpoint_id}: {e}")
+        results["error"] = "Calculation error: " + str(e)
     return results
 
 def get_history_for_period(endpoint_id, start_time, end_time):
-    """Fetches history records (timestamp, status, response_time_ms) for charting."""
-    conn = get_connection()
-    if not conn: return {"error": "DB connection unavailable", "data": []}
+    """Fetches history records using SQLAlchemy, if DB is ready."""
+    _ensure_tables_exist() # Attempt table creation if needed
+
+    # Check readiness flags directly from the models module at runtime
+    if not models.ENGINE_INITIALIZED or not models.DB_TABLES_CREATED:
+        return {"error": "DB N/A", "data": []}
+    # ----------------------------------------------------------------------
     results = {"data": [], "error": None}
     try:
-        with conn.cursor() as cur:
-            cur.execute("""SELECT timestamp, status, response_time_ms FROM status_history
-                           WHERE endpoint_id = %s AND timestamp >= %s AND timestamp <= %s
-                           ORDER BY timestamp ASC""", (endpoint_id, start_time, end_time))
-            rows = cur.fetchall()
-            results["data"] = [{"timestamp": row[0].isoformat(), "status": row[1], "response_time_ms": row[2]} for row in rows]
-            # print(f"Fetched {len(rows)} history points for {endpoint_id} in period.") # Less verbose logging
+        with session_scope() as session:
+             # Check session explicitly inside scope
+            if session is None:
+                 results["error"] = "DB Session N/A"
+                 return results
+            # ---------------------------------------------
+            query = ( select( StatusHistory.timestamp, StatusHistory.status, StatusHistory.response_time_ms )
+                      .where( and_( StatusHistory.endpoint_id == endpoint_id, StatusHistory.timestamp >= start_time, StatusHistory.timestamp <= end_time ) )
+                      .order_by(StatusHistory.timestamp.asc()) )
+            rows = session.execute(query).fetchall()
+            results["data"] = [ {"timestamp": row.timestamp.isoformat(), "status": row.status, "response_time_ms": row.response_time_ms} for row in rows ]
     except Exception as e:
-        print(f"Error fetching history for {endpoint_id}: {e}")
+        print(f"SQLAlchemy Error fetching history for {endpoint_id}: {e}")
         results["error"] = f"History fetch error: {e}"
-        try: conn.rollback()
-        except Exception as re: print(f"Error during rollback: {re}")
-    finally: release_connection(conn)
     return results

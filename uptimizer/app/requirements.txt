@@ -1,4 +1,8 @@
 Flask==3.0.0
 requests==2.31.0
 APScheduler==3.10.4
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.9 # Keep for now, SQLAlchemy uses it under the hood
+SQLAlchemy==2.0.29     # ORM
+alembic==1.13.1        # Migrations
+python-dotenv==1.0.1   # For loading .env in Flask context if needed (optional)
+Werkzeug==3.0.2        # For DispatcherMiddleware

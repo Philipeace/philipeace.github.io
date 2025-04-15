@@ -1,50 +1,69 @@
 {
     "settings": {
         "check_interval_seconds": 30,
-        "check_timeout_seconds": 10
+        "check_timeout_seconds": 10,
+        "disable_floating_elements": false
     },
     "endpoints": [
-        {
-            "id": "local-test-ok",
-            "name": "Local Test Server (OK)",
-            "url": "http://uptimizer_test_server:8080/ok",
-            "group": "Test Environment",
-            "check_timeout_seconds": 5
-        },
         {
             "id": "local-test-fail",
             "name": "Local Test Server (Fail)",
             "url": "http://uptimizer_test_server:8080/fail",
             "group": "Test Environment",
-            "check_timeout_seconds": 22
+            "check_interval_seconds": 15,
+            "check_timeout_seconds": 5
         },
         {
             "id": "local-test-slow",
             "name": "Local Test Server (Slow)",
             "url": "http://uptimizer_test_server:8080/slow",
             "group": "Test Environment",
-            "check_timeout_seconds": 2
+            "check_interval_seconds": 15,
+            "check_timeout_seconds": 5
         },
         {
             "id": "external-example",
             "name": "External Example Site",
             "url": "https://example.com",
             "group": "External Services",
-            "check_timeout_seconds": null
+            "check_interval_seconds": 15,
+            "check_timeout_seconds": 5
         },
         {
-            "id": "ep_ed977a96e0",
-            "name": "external services",
-            "url": "https://mybad.com",
-            "group": "test",
-            "check_timeout_seconds": 1000
+            "id": "ep_104da80d58",
+            "name": "Local Test Server (Fail)",
+            "url": "https://google.com",
+            "group": "test"
         },
         {
-            "id": "ep_9b2025a87d",
-            "name": "testte",
-            "url": "https://localhost:8080",
-            "group": "test",
-            "check_timeout_seconds": 2
+            "id": "ep_2657765fbd",
+            "name": "test",
+            "url": "https://google.com",
+            "group": "Test Environment"
+        },
+        {
+            "id": "ep_0209c8b503",
+            "name": "the g",
+            "url": "https://google.com",
+            "group": "aeww"
+        },
+        {
+            "id": "ep_28fbe0c249",
+            "name": "the g",
+            "url": "http://uptimizer_test_server:8080/fail",
+            "group": "test"
+        },
+        {
+            "id": "ep_6c46a1be58",
+            "name": "the g",
+            "url": "https://google.com",
+            "group": "test"
+        },
+        {
+            "id": "ep_64d8d16315",
+            "name": "t\u00e4t\u00e4r\u00e4ae",
+            "url": "https://google.com",
+            "group": "external services"
         }
     ]
 }
