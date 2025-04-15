@@ -1,3 +1,5 @@
+<!-- File Name: index.html -->
+<!-- Full Path: C:\Users\Admin\Documents\Public\philipeace.github.io\uptimizer\app\templates\index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,12 +20,8 @@
     <div class="container">
         <h1>Uptimizer - Keepin' Tabs on the Tabs</h1>
 
-        <!-- Top Controls: Global Settings & Add Client Button -->
+        <!-- Top Controls: Add Client Button -->
         <div class="top-controls">
-            <div class="global-settings-display">
-                 Global Interval: <span id="global-interval-val">--</span>s |
-                 Global Timeout: <span id="global-timeout-val">--</span>s
-            </div>
             <div class="add-client-button-container">
                  <button id="add-client-btn">+ Add New Client</button> {# JS sets onclick #}
             </div>
@@ -31,19 +29,17 @@
 
         <!-- Client Tabs -->
         <div class="client-tab-container" id="client-tabs">
-            {# Tabs generated dynamically by JS #}
             <span class="italic-placeholder" style="padding: 10px;">Loading clients...</span> {# Initial placeholder #}
-        </div>
-
-         <!-- Add New Endpoint Button (Adds to the ACTIVE Client) -->
-        <div class="add-edit-form-container">
-             <button id="add-endpoint-btn">+ Add Endpoint (Client)</button> {# Text/onclick updated by JS #}
         </div>
 
         <!-- Client Content Area -->
         <div id="client-content-container">
-            {# Content panes generated dynamically by JS #}
              <span class="italic-placeholder" style="padding: 10px;">Loading content...</span> {# Initial placeholder #}
+        </div>
+
+         <!-- Add New Endpoint Button (now appears after content container) -->
+        <div class="add-edit-form-container" id="add-endpoint-button-container" style="margin-top: 15px; text-align: right;">
+             <button id="add-endpoint-btn">+ Add Endpoint (Client)</button> {# Text/onclick updated by JS #}
         </div>
 
          <!-- Template for new endpoint row (used by JS) -->
@@ -63,7 +59,7 @@
     </div>
 
     <footer>
-        <p>Uptimizer v1.15.1 - Modular Mania.</p> {# Version Bump #}
+        <p>Uptimizer v1.15.3 - JS Refactor & UI Polish.</p> {# Version Bump #}
         <p id="footer-status">Initializing status checks...</p>
         <div id="settings-toggles">
             <button id="toggle-floating">Toggle Floating (Client)</button> {# Text/Client/onclick updated by JS #}
@@ -97,17 +93,24 @@
     </script>
 
     {# Link external JavaScript files IN ORDER #}
-    {# Load modules with fewer dependencies first #}
-    <script src="{{ url_for('static', filename='floating.js') }}"></script> {# No dependencies on others #}
-    <script src="{{ url_for('static', filename='chart.js') }}"></script>   {# Depends only on Chart.js lib #}
-    {# Load UI functions next, as they build the structure needed by others #}
-    <script src="{{ url_for('static', filename='ui.js') }}"></script>
-    {# Load API functions which might be called by modals or main script #}
-    <script src="{{ url_for('static', filename='api.js') }}"></script>
-    {# Load Modals which attach listeners and call UI/API functions #}
-    <script src="{{ url_for('static', filename='modals.js') }}"></script>
+    {# Load UI Utilities first #}
+    <script src="{{ url_for('static', filename='js/ui/ui_utils.js') }}"></script>
+    {# Load Floating Elements (no UI deps other than utils) #}
+    <script src="{{ url_for('static', filename='js/floating.js') }}"></script>
+    {# Load Charting (no UI deps other than utils and Chart.js lib) #}
+    <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+    {# Load UI Building blocks #}
+    <script src="{{ url_for('static', filename='js/ui/ui_builder.js') }}"></script>
+    {# Load UI Updaters #}
+    <script src="{{ url_for('static', filename='js/ui/ui_updater.js') }}"></script>
+    {# Load UI Interactions #}
+    <script src="{{ url_for('static', filename='js/ui/ui_interactions.js') }}"></script>
+    {# Load API functions #}
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    {# Load Modals (depends on API and UI functions) #}
+    <script src="{{ url_for('static', filename='js/modals.js') }}"></script>
     {# Load main script last to orchestrate everything #}
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
 </body>
 </html>

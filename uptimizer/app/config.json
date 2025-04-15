@@ -48,8 +48,8 @@
                 "name": "Another Client",
                 "disable_floating_elements": false,
                 "client_type": "local",
-                "api_enabled": false,
-                "api_token": null,
+                "api_enabled": true,
+                "api_token": "ImFub3RoZXJfY2xpZW50Ig.Z_4Ixw.ViqQRTEs3tYh125MK5GVwsmL0Ws",
                 "remote_url": null
             },
             "endpoints": [

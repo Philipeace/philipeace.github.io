@@ -77,7 +77,7 @@ uptimizer/
 ## Full Project Backlog
 
 **High Priority:**
-*   [ ] **Multi-Client UI:** Implement UI for selecting/managing clients. Update Add/Edit/Delete/Toggle actions to target the selected client.
+*   [x] **Multi-Client UI:** Implement UI for selecting/managing clients. Update Add/Edit/Delete/Toggle actions to target the selected client.
 *   [ ] **Improve Testing:** Unit/integration tests (API, DB, Scheduler, Persistence, Edit, Models, Alembic migrations).
 *   [ ] **Summary Statistics Page/Dashboard:** A dedicated view for overall stats (potentially per-client).
 *   [ ] **Data Retention/Archiving:** Implement logic to prune old history.

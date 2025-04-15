@@ -24,6 +24,8 @@ services:
       - DB_PASSWORD=supersecretpassword # Change in production! Use .env file ideally.
       # Test Server URL (if needed by app logic, not just config.json)
       - TEST_SERVER_URL=http://uptimizer_test_server:8080
+      # ENCRYPTION
+      - SECRET_KEY=supersecretkey
     # env_file: # Optional: Load variables from .env file in the project root
     #   - .env
     networks:

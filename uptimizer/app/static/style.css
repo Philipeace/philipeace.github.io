@@ -1,3 +1,5 @@
+/* File Name: style.css */
+/* Full Path: C:\Users\Admin\Documents\Public\philipeace.github.io\uptimizer\app\static\style.css */
 /* CSS HEX */
 :root {
     --dark-green: #0b2906ff;
@@ -14,7 +16,8 @@
     --tab-active-bg: rgba(11, 41, 6, 0.5);
     --tab-border: rgba(0, 0, 0, 0.6);
     --tab-active-border: var(--cocoa-brown);
-    --settings-bg: rgba(0, 0, 0, 0.15); /* Subtle background for settings */
+    --settings-bg: rgba(0, 0, 0, 0.15); /* Subtle background for settings body */
+    --settings-header-bg: var(--dark-green); /* Dark green for settings header */
     --input-bg: rgba(0,0,0, 0.6); /* Darker input background */
 }
 
@@ -62,10 +65,9 @@ body.floating-disabled .floating-element-container { opacity: 0; pointer-events:
 /* --- Layout & Content --- */
 .container { max-width: 1500px; margin: auto; overflow: visible; padding: 0 20px; position: relative; z-index: 1; }
 h1 { text-align: center; margin-bottom: 15px; font-size: 3em; padding-bottom: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
-/* Global Settings & Add Client Button */
-.top-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;}
-.global-settings-display { text-align: center; font-size: 0.9em; color: #d8cfca; padding: 8px 12px; background-color: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid rgba(0,0,0,0.4); flex-grow: 1; margin-right: 10px;}
-.global-settings-display span { color: var(--cocoa-brown); font-weight: bold; }
+/* Top Controls: Add Client Button only */
+.top-controls { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;}
+/* Removed .global-settings-display */
 .add-client-button-container button, .add-edit-form-container button { background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); border: 1px solid #000; color: var(--isabelline); font-weight: bold; padding: 10px 15px; border-radius: 4px; cursor: pointer; transition: background 0.2s ease; }
 .add-client-button-container button:hover, .add-edit-form-container button:hover { background: linear-gradient(135deg, #f57c20, var(--cocoa-brown)); }
 
@@ -80,25 +82,74 @@ h1 { text-align: center; margin-bottom: 15px; font-size: 3em; padding-bottom: 10
 .client-tab-content { display: none; padding-top: 10px; /* Reduced space */ }
 .client-tab-content.active { display: block; }
 
-/* --- Client Settings Section --- */
-.client-settings-container { background-color: var(--settings-bg); border: 1px solid rgba(0,0,0,0.5); border-radius: 6px; padding: 15px; margin-bottom: 20px; box-shadow: inset 0 0 8px rgba(0,0,0,0.4); }
-.client-settings-container h4 { margin-top: 0; margin-bottom: 12px; color: var(--cocoa-brown); font-size: 1.3em; border-bottom: 1px solid rgba(226, 113, 29, 0.3); padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
-.client-settings-container p { margin-bottom: 8px; font-size: 0.95em; }
-.client-settings-container strong { color: var(--isabelline); }
-.client-settings-container small { color: #d8cfca; opacity: 0.8; display: block; margin-top: 5px; }
+/* --- Client Settings Section (Collapsible) --- */
+.client-settings-container {
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, rgba(11, 41, 6, 0.4) 0%, rgba(11, 41, 6, 0.6) 100%); /* Match group container background */
+    border: 1px solid rgba(0,0,0,0.7);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0,0,0,0.4);
+    overflow: hidden; /* Important for collapse */
+}
+.client-settings-header {
+    padding: 12px 20px; /* Slightly less padding than group header */
+    background: linear-gradient(135deg, var(--settings-header-bg), #051402); /* Dark green gradient */
+    border-bottom: 1px solid #000;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.3s ease;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+.client-settings-header:hover {
+    background: linear-gradient(135deg, #0f3d09, var(--settings-header-bg));
+}
+.client-settings-title {
+    margin: 0;
+    color: var(--cocoa-brown);
+    font-size: 1.3em; /* Match group title size */
+    font-weight: bold;
+}
+.client-settings-toggle {
+    font-size: 1.2em;
+    color: var(--isabelline);
+    transition: transform 0.3s ease;
+}
+.client-settings-body {
+    padding: 15px 20px; /* Match group content padding */
+    background-color: transparent; /* Body uses container background */
+    border-top: 1px solid rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* Crucial for collapse animation */
+    transition: max-height 0.5s ease-out, padding 0.5s ease-out, border 0.5s ease-out;
+}
+.client-settings-body.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top: none;
+    overflow: hidden;
+}
+/* Styling within settings body */
+.client-settings-body p { margin-bottom: 8px; font-size: 0.95em; }
+.client-settings-body strong { color: var(--isabelline); }
+.client-settings-body small { color: #d8cfca; opacity: 0.8; display: block; margin-top: 5px; }
 .inline-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: var(--isabelline); padding: 2px 6px; margin-left: 8px; border-radius: 3px; cursor: pointer; font-size: 0.85em; vertical-align: middle; }
 .inline-btn:hover { background: rgba(255,255,255,0.2); }
 .inline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.delete-client-btn { color: var(--vermilion); font-size: 1.1em; padding: 1px 4px; }
-.edit-client-btn { color: var(--cocoa-brown); font-size: 1em; padding: 1px 4px;}
+.delete-client-btn { color: var(--vermilion); font-size: 1.1em; padding: 1px 4px; margin-left: auto; /* Push delete to the right */ }
+.edit-client-btn { color: var(--cocoa-brown); font-size: 1em; padding: 1px 4px; }
 .api-token-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2); }
 .token-display-wrapper { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
 .token-display-wrapper input[readonly] { flex-grow: 1; background-color: var(--input-bg); border-color: rgba(255,255,255,0.3); font-family: monospace; font-size: 0.9em; cursor: text; }
 .token-display-wrapper button { font-size: 1.1em; padding: 4px; line-height: 1; } /* Eye, Refresh icons */
+.global-settings-display { text-align: left; font-size: 0.9em; color: #d8cfca; padding: 8px 0px 0px 0px; margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);}
+.global-settings-display span { color: var(--cocoa-brown); font-weight: bold; }
 
 
 /* --- Endpoint Groups & Add Section --- */
-.add-edit-form-container { text-align: right; margin-bottom: 20px; margin-top: 0; } /* Moved add client btn */
+/* Add Endpoint button moved */
+.add-edit-form-container { text-align: right; margin-top: 15px; }
 .group-container { margin-bottom: 25px; background: linear-gradient(135deg, rgba(11, 41, 6, 0.4) 0%, rgba(11, 41, 6, 0.6) 100%); border: 1px solid rgba(0,0,0,0.7); border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0,0,0,0.4); overflow: hidden; }
 .group-header { padding: 14px 20px; background: linear-gradient(135deg, var(--cocoa-brown), #b55a17); border-bottom: 1px solid #000; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.3s ease; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); }
 .group-header:hover { background: linear-gradient(135deg, #f57c20, var(--cocoa-brown)); }
@@ -108,7 +159,7 @@ h1 { text-align: center; margin-bottom: 15px; font-size: 3em; padding-bottom: 10
 .group-content.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; border-top: none; overflow: hidden; }
 .group-container.no-endpoints-client .group-header { background: rgba(11, 41, 6, 0.3); border-bottom: none; cursor: default; }
 .group-container.no-endpoints-client .group-header:hover { background: rgba(11, 41, 6, 0.3); }
-.italic-placeholder { font-style: italic; color: #d8cfca; font-size: 1.1em; font-weight: normal; }
+.italic-placeholder { font-style: italic; color: #d8cfca; font-size: 1.1em; font-weight: normal; padding: 5px 0; } /* Added padding */
 /* Specific styling for linked client info box */
 .linked-client-info .group-header { background: linear-gradient(135deg, #5a5a5a, #404040); cursor: default; } /* Gray header */
 .linked-client-info .group-header:hover { background: linear-gradient(135deg, #6c6c6c, #505050); }
@@ -198,4 +249,5 @@ select { appearance: none; background-image: url("data:image/svg+xml;charset=US-
 
 /* Responsive adjustments */
 @media (max-width: 1200px) { /* ... (endpoint grid adjustments unchanged) ... */ .endpoint-item { grid-template-columns: minmax(120px, 1fr) minmax(150px, 2fr) minmax(70px, auto) minmax(80px, auto) minmax(70px, auto) minmax(50px, auto); gap: 8px; padding: 10px; } .endpoint-name { font-size: 1em; } .endpoint-url, .endpoint-status, .endpoint-details, .endpoint-stats { font-size: 0.8em; } }
-@media (max-width: 768px) { /* ... (mobile stacking adjustments unchanged) ... */ h1 { font-size: 2.2em; margin-bottom: 20px; } .top-controls { flex-direction: column; align-items: stretch; } .global-settings-display { font-size: 0.8em; margin-bottom: 10px; margin-right: 0;} .client-tab { font-size: 1em; padding: 8px 12px;} .client-settings-container h4 { font-size: 1.1em; } .group-title { font-size: 1.3em;} .endpoint-item { grid-template-columns: 1fr; gap: 5px; text-align: left; border-left: 5px solid rgba(0,0,0,0.5); cursor: default; } .endpoint-item:hover { border-left: 5px solid var(--cocoa-brown); } .endpoint-item > div { text-align: left; padding: 2px 0; background: none; min-width: 0; white-space: normal; } .endpoint-url::before { content: "URL: "; font-weight: bold; color: var(--isabelline); } .endpoint-status { display: inline-block; padding: 3px 6px; } .endpoint-status::before { content: "Status: "; font-weight: bold; color: var(--isabelline); } .endpoint-details::before { content: "Details: "; font-weight: bold; color: var(--isabelline); } .endpoint-stats::before { content: "Stats: "; font-weight: bold; color: var(--isabelline); } .endpoint-actions { justify-content: flex-start; padding-top: 5px; } .modal-form { grid-template-columns: 1fr; } footer { flex-direction: column; gap: 10px; } }
+@media (max-width: 768px) { /* ... (mobile stacking adjustments unchanged) ... */ h1 { font-size: 2.2em; margin-bottom: 20px; } .top-controls { flex-direction: column; align-items: flex-end; } /* Align Add Client to right */ .add-client-button-container { align-self: flex-end; } .client-tab { font-size: 1em; padding: 8px 12px;} .client-settings-header { flex-wrap: wrap; } .client-settings-title { font-size: 1.2em; /* Slightly smaller */ margin-bottom: 5px; width: 100%; } .client-settings-toggle { margin-left: auto; /* Push toggle right */} .group-title { font-size: 1.3em;} .endpoint-item { grid-template-columns: 1fr; gap: 5px; text-align: left; border-left: 5px solid rgba(0,0,0,0.5); cursor: default; } .endpoint-item:hover { border-left: 5px solid var(--cocoa-brown); } .endpoint-item > div { text-align: left; padding: 2px 0; background: none; min-width: 0; white-space: normal; } .endpoint-url::before { content: "URL: "; font-weight: bold; color: var(--isabelline); } .endpoint-status { display: inline-block; padding: 3px 6px; } .endpoint-status::before { content: "Status: "; font-weight: bold; color: var(--isabelline); } .endpoint-details::before { content: "Details: "; font-weight: bold; color: var(--isabelline); } .endpoint-stats::before { content: "Stats: "; font-weight: bold; color: var(--isabelline); } .endpoint-actions { justify-content: flex-start; padding-top: 5px; } .modal-form { grid-template-columns: 1fr; } footer { flex-direction: column; gap: 10px; } }
+/* --- End CSS --- */

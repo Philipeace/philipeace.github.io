@@ -1,3 +1,5 @@
+# File Name: main.py
+# Full Path: C:\Users\Admin\Documents\Public\philipeace.github.io\uptimizer\app\main.py
 # --- Force app directory onto path ---
 import sys
 import os
@@ -38,7 +40,16 @@ except ImportError as e:
 # Import other components AFTER models and state
 from app.config_manager import load_initial_config
 from app.checker import run_checks_task
-from app.routes import api_bp # Import the main API blueprint
+
+# --- Import NEW Blueprints --- CORRECTED IMPORTS ---
+# Import the blueprint OBJECTS defined in your api_*.py and views.py files
+from app.views import views_bp
+from app.api.api_general import general_api_bp # Check this file exists and defines general_api_bp
+from app.api.api_clients import clients_api_bp # Check this file exists and defines clients_api_bp
+from app.api.api_endpoints import endpoints_api_bp # Check this file exists and defines endpoints_api_bp
+from app.api.api_stats import stats_api_bp # Check this file exists and defines stats_api_bp
+from app.api.api_config import config_api_bp # Check this file exists and defines config_api_bp
+# --- End New Blueprint Imports ---
 
 # --- Flask App Creation ---
 app = Flask(__name__)
@@ -48,23 +59,28 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 if not app.config['SECRET_KEY']:
     app.logger.warning("SECURITY WARNING: SECRET_KEY is not set in environment variables. API token functionality will fail. Please set a strong, random SECRET_KEY in your .env file.")
-    # You might want to exit here in a production scenario if the key is mandatory
-    # sys.exit("Error: SECRET_KEY not configured.")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s [%(name)s] %(message)s')
-app.logger.setLevel(logging.INFO) # Ensure Flask logger level is appropriate
+app.logger.setLevel(logging.INFO)
 app.logger.info("Flask App configured. SECRET_KEY loaded (if set).")
 
 
-# --- Register Blueprints ---
-app.register_blueprint(api_bp)
-app.logger.info("API Blueprint registered.")
+# --- Register Blueprints --- CORRECTED REGISTRATIONS ---
+app.register_blueprint(views_bp) # For HTML rendering (usually no prefix)
+# Register all API blueprints with a common '/api' prefix
+app.register_blueprint(general_api_bp, url_prefix='/api') # e.g., /api/status
+app.register_blueprint(clients_api_bp, url_prefix='/api') # e.g., /api/clients, /api/v1/client/...
+app.register_blueprint(endpoints_api_bp, url_prefix='/api') # e.g., /api/clients/<id>/endpoints
+app.register_blueprint(stats_api_bp, url_prefix='/api') # e.g., /api/statistics, /api/history/...
+app.register_blueprint(config_api_bp, url_prefix='/api') # e.g., /api/config_api/..., /api/config/reload
+app.logger.info("All Blueprints registered.")
 
 # --- Scheduler Setup ---
 scheduler = BackgroundScheduler(daemon=True, timezone="UTC")
 
 # --- Initialization and Cleanup ---
+# ... (initialize function remains the same) ...
 def initialize():
     """Initialize database, load config, start scheduler."""
     global scheduler
@@ -126,6 +142,7 @@ def initialize():
     except Exception as e: app.logger.error(f"Error starting/scheduling job: {e}", exc_info=True)
     app.logger.info("\nInitialization Complete.\n" + "="*30)
 
+# ... (cleanup function remains the same) ...
 def cleanup():
     """Gracefully shut down scheduler."""
     app.logger.info("\n" + "="*30 + "\nShutdown signal. Cleaning up...\n" + "="*30)
@@ -157,28 +174,31 @@ if __name__ == '__main__':
 
     if is_main_process:
         app.logger.info("Main process detected. Performing initialization.")
-        if 'models' in locals() or 'models' in globals():
-             if app.config['SECRET_KEY']: # Only initialize if SECRET_KEY is set
-                initialize()
-             else:
-                app.logger.critical("FATAL: SECRET_KEY not set. Initialization aborted. Cannot run application securely.")
-                # Optionally exit: sys.exit(1)
-        else:
+        # Check critical components before initializing
+        secret_key_ok = bool(app.config['SECRET_KEY'])
+        models_ok = ('models' in locals() or 'models' in globals()) and models is not None
+
+        if not secret_key_ok:
+            app.logger.critical("FATAL: SECRET_KEY not set. Initialization aborted. Cannot run application securely.")
+        elif not models_ok:
             app.logger.critical("FATAL: Core 'models' module failed to load. Cannot initialize.")
-            # Optionally exit: sys.exit(1)
+        else:
+            # Only initialize if checks pass
+            initialize()
     else:
          app.logger.info("(Reloader Active: Parent process monitoring, initialization deferred to child)")
 
 
     # Start the Flask development server (or WSGI server in production)
-    # Only run the server if the SECRET_KEY is configured, otherwise initialization wouldn't have run.
-    if app.config['SECRET_KEY']:
+    # Only run the server if the SECRET_KEY is configured AND models loaded
+    # (Initialization function wouldn't run otherwise)
+    if app.config['SECRET_KEY'] and ('models' in locals() or 'models' in globals()) and models is not None:
          from werkzeug.serving import run_simple
          app.logger.info(f"Starting Werkzeug server on 0.0.0.0:5000 (Debug: {app.debug})...")
-         # Use the 'application' object which might be the original app or the middleware wrapper
          try:
+            # Use the 'application' object which might be the original app or the middleware wrapper
             run_simple(hostname='0.0.0.0', port=5000, application=application, use_reloader=app.debug, use_debugger=app.debug)
          except Exception as run_err:
              app.logger.critical(f"Failed to start server: {run_err}", exc_info=True)
     else:
-        app.logger.critical("Server not started because SECRET_KEY is missing.")
+        app.logger.critical("Server not started because SECRET_KEY is missing or core modules failed.")
