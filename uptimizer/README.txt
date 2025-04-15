@@ -1,6 +1,6 @@
-# Uptimizer - Uptime Monitoring Tool v1.12.5
+# Uptimizer - Uptime Monitoring Tool v1.13.0
 
-A simple, self-hosted uptime monitoring tool built with Python (Flask), PostgreSQL (via SQLAlchemy), and designed for configurability. Keepin' Tabs on the Tabs. ✨ Vibe Coded ✨
+A simple, self-hosted uptime monitoring tool built with Python (Flask), PostgreSQL (via SQLAlchemy + Alembic), and designed for configurability and multi-client support (future). Keepin' Tabs on the Tabs. ✨ Vibe Coded ✨
 
 ## File Structure Overview
 
@@ -13,12 +13,13 @@ uptimizer/
 |   |   `-- index.html
 |   |-- __init__.py         # Marks 'app' as a Python package
 |   |-- main.py             # Flask app setup, init, run, state
-|   |-- config.json         # Endpoint configuration (initial load & persistence)
+|   |-- config.json         # Endpoint/Client configuration (load & persistence)
 |   |-- database.py         # SQLAlchemy DB interaction functions
 |   |-- models.py           # SQLAlchemy ORM models, engine, session, table create
 |   |-- routes.py           # Flask routes (Blueprint)
 |   |-- checker.py          # Background check task logic
 |   |-- config_manager.py   # Config file load/save logic
+|   |-- state.py            # Shared application state and constants
 |   `-- requirements.txt    # Python dependencies
 |-- test_server/            # Simple Flask server for testing checks
 |   |-- server.py
@@ -27,10 +28,10 @@ uptimizer/
 |-- tests/                  # Application tests
 |   |-- __init__.py
 |   `-- test_app.py
-|-- alembic/                # Alembic migration scripts (To be initialized)
-|   |-- versions/
-|   `-- env.py
-|-- alembic.ini             # Alembic configuration (To be initialized)
+|-- alembic/                # Alembic migration scripts
+|   |-- versions/           # Migration files (e.g., ..._initial_schema.py)
+|   `-- env.py              # Alembic environment setup
+|-- alembic.ini             # Alembic configuration
 |-- .env.example            # Example environment file (copy to .env)
 |-- .gitignore              # Specifies intentionally untracked files
 |-- Dockerfile              # Dockerfile for the main application
@@ -45,87 +46,97 @@ uptimizer/
 3.  **Navigate:** Open terminal to project root.
 4.  **Environment Variables:** Copy `.env.example` to `.env` and edit DB passwords. Optionally set `APP_BASE_PATH=/yourpath`.
 5.  **Build & Run:** `docker-compose up --build -d`
-6.  **Access App:** `http://localhost:5000` (or `http://localhost:5000/your_base_path`).
-7.  **Stopping:** `docker-compose down` (add `-v` to remove DB volume).
+6.  **Database Migrations (First Run/Updates):**
+    *   After the containers are up, run Alembic migrations *from your host machine* (ensure Python environment has dependencies from `app/requirements.txt` installed: `pip install -r app/requirements.txt`):
+    *   `alembic -c alembic.ini upgrade head`
+    *   This applies necessary database schema changes. You only need to run this when the database schema changes (check changelogs).
+7.  **Access App:** `http://localhost:5000` (or `http://localhost:5000/your_base_path`). Allow a few moments after migration for the app to fully connect.
+8.  **Stopping:** `docker-compose down` (add `-v` to remove DB volume - **WARNING:** This deletes DB data).
 
 ## How to Use the Application
 
-*   **Dashboard:** Displays monitored endpoints grouped by category (collapsible).
-*   **Endpoint Info:** Columns: Name, URL, Interval(s), Timeout(s), Status, Details, 24h Uptime %, Actions (Edit/Delete). Shows global or per-endpoint interval/timeout.
-*   **Adding Endpoints:** Click "+ Add New Endpoint". Fill form (Name, URL required; Group, Interval, Timeout optional). URL scheme (`https://`) auto-prefixed if missing. Warning if URL lacks ".". Saved to `app/config.json`.
-*   **Editing Endpoints:** Click '✎'. Modal opens pre-filled. Modify fields and save. Saved to `app/config.json`. Group changes move item dynamically.
-*   **Deleting Endpoints:** Click '×'. Confirm via modal. Removed from UI and `app/config.json`. History data remains in DB.
-*   **Viewing History:** Click row (not buttons). Modal opens with response time chart (1h/24h/7d). Close via '×', Esc, or background click.
-*   **Floating Elements:** Animated text/icons move randomly. Click "Toggle Floating Elements" button in footer to disable/enable (setting saved to `config.json`).
-*   **Configuration Sync:**
-    *   UI changes (Add/Edit/Delete/Toggle Floats) save to `app/config.json` and are live.
-    *   Manual edits to `app/config.json` require clicking "Refresh Config from File" in the footer or restarting the app (`docker-compose restart uptimizer_app`) to take effect. Refreshing overwrites any unsaved UI state with the file content.
+*   **Dashboard:** Displays global settings (Interval, Timeout). Endpoints are grouped by Client (currently only "Default Client" shown), then by internal Group (collapsible). Statuses update automatically.
+*   **Endpoint Info:** Columns: Name, URL, Status, Details, 24h Uptime %, Actions (Edit/Delete).
+*   **Adding/Editing/Deleting Endpoints:** Buttons currently operate on the "Default Client". Saved to `app/config.json`.
+*   **Viewing History:** Click endpoint row. Modal opens with response time line and status visualized as colored dots along the x-axis (Green=UP, Red=DOWN, Orange=ERROR).
+*   **Floating Elements:** Toggle applies to the "Default Client" for now (setting saved to `app/config.json` under the client).
+*   **Configuration Sync:** UI changes save to `config.json`. Manual edits require clicking "Refresh Config from File" (prompts page refresh via modal) or app restart.
 
 ## Asset Instructions
 
-*   **`app/config.json`:** Defines initial endpoints/settings and is the persistent store. Allows global `settings` (e.g., `check_interval_seconds`, `check_timeout_seconds`, `disable_floating_elements`) and per-endpoint `check_interval_seconds`, `check_timeout_seconds`.
-*   **`.env` file:** For sensitive configuration like DB passwords and optional `APP_BASE_PATH`.
+*   **`app/config.json`:** Defines `global_settings` and nested `clients` data (including client `settings` and `endpoints`). See example in file.
+*   **`.env` file:** For DB credentials and optional `APP_BASE_PATH`. Used by both app and Alembic.
+*   **`alembic/versions/`:** Contains database migration scripts.
 
 ## Harmless Error Explanation
 
 *   **Browser Console:** Ignore `Browsing Topics API removed`. May show `Failed to fetch` temporarily. URL dot warning is informational. 404 for `favicon.ico`.
-*   **UI Display:** "PENDING" status; "--%" or "Stats Err"; Modal errors; Add/Edit form errors.
-*   **Server Logs (Terminal):** Warnings for IDs; DB connection retries/errors (especially on first start if volume empty); Scheduler messages; Config save errors; DB operation errors.
+*   **UI Display:** "PENDING" status briefly; "--%" or "Stats Err" before first stats calculation; Modal errors; Add/Edit form errors.
+*   **Server Logs (Terminal):** Warnings for IDs; DB connection retries/errors; `DB INFO: Attempting table creation...`; Scheduler messages; Config save errors; DB operation errors; `API WARN: ... returning DB N/A` if requests hit before DB/tables ready. Alembic logs during migration runs.
 
 ## Full Project Backlog
 
 **High Priority:**
-*   [ ] **Database Migrations:** Implement Alembic workflow (`alembic init`, configure `env.py`, generate initial migration).
-*   [ ] **Improve Testing:** Unit/integration tests (API, DB, Scheduler, Persistence, Edit, SQLAlchemy models).
-*   [ ] **Summary Statistics Page/Dashboard:** A dedicated view for overall stats.
-*   [ ] **Data Retention/Archiving:** Implement logic to prune old history or archive data for deleted endpoints.
+*   [ ] **Multi-Client UI:** Implement UI for selecting/managing clients. Update Add/Edit/Delete/Toggle actions to target the selected client.
+*   [ ] **Improve Testing:** Unit/integration tests (API, DB, Scheduler, Persistence, Edit, Models, Alembic migrations).
+*   [ ] **Summary Statistics Page/Dashboard:** A dedicated view for overall stats (potentially per-client).
+*   [ ] **Data Retention/Archiving:** Implement logic to prune old history.
 
 **Medium Priority:**
-*   [ ] **Per-Endpoint Settings UI:** Improve UI for editing settings.
-*   [ ] **Notifications:** Implement alerting on status changes.
-*   [ ] **Authentication:** Add basic user authentication.
-*   [ ] **Chart Enhancements:** Status indicators; Custom date ranges; Data downsampling.
+*   [ ] **Global/Client Settings UI:** Allow editing global and client settings via the UI. Update scheduler dynamically on interval change.
+*   [ ] **Notifications:** Implement alerting on status changes (per client?).
+*   [ ] **Authentication/RBAC:** Add basic user auth. Integrate Keycloak/OIDC for client separation/RBAC based on groups. *(Requires User Input)*
+*   [ ] **Chart Enhancements:** Status indicators (beyond points); Custom date ranges; Data downsampling for large history.
 *   [ ] **Logging:** Implement structured logging (`logging` module).
-*   [ ] **Configuration Validation:** Validate Edit payload; JSON Schema for `config.json`.
-*   [ ] **Multi-Client Support:** UI/Backend changes for client separation.
+*   [ ] **Configuration Validation:** JSON Schema for `config.json`.
 
 **Low Priority / Future:**
-*   [ ] **Advanced Checks:** HTTP methods, headers, content checks.
-*   [ ] **ConfigMap Configuration:** Improve K8s ConfigMap integration (currently relies on file save/reload).
-*   [ ] **Production WSGI:** Gunicorn/uWSGI setup.
-*   [ ] **Concurrency:** Improve background check concurrency.
-*   [ ] **Stats/History Performance:** Optimize queries/calculations.
-*   [ ] **Floating Elements:** Collision detection, more pathing variety.
-*   [ ] **Group Settings:** Allow configuring settings at the group level.
-*   [ ] **Config API:** Add API endpoints to upload/download `config.json`.
-*   [ ] **Storage Backends:** Add support for S3/Azure Blob/MinIO for config storage. *(Requires Ask)*
-*   [ ] **Identity/Auth Integrations:** Keycloak OIDC, Azure Managed Identity. *(Requires Ask)*
+*   **Kubernetes Operator:**
+    *   [ ] Define Custom Resource Definition (CRD) for Uptimizer clients/endpoints.
+    *   [ ] Implement Kubernetes Operator logic (using Kopf or similar) to manage Uptimizer based on CRDs.
+    *   [ ] Package operator for deployment (Helm chart?).
+    *   [ ] Setup local Minikube/Kind testing environment for operator development.
+*   **Uptimizer K8s Client:**
+    *   [ ] Add mode to Uptimizer app (`--client-mode`?) that disables UI/DB/checking.
+    *   [ ] Implement logic to discover services/ingresses in a K8s cluster based on annotations/labels.
+    *   [ ] Expose an API endpoint (`/cluster-status`?) reporting discovered healthy endpoints.
+    *   [ ] Allow central Uptimizer instance to register these clients via `uptimize://cluster-endpoint` URL (parsed to HTTPS).
+    *   [ ] Allow registering cluster endpoints directly into an existing client view in the central instance.
+*   **Advanced Checks:** HTTP methods, headers, content checks.
+*   **Production WSGI:** Gunicorn/uWSGI setup.
+*   **Concurrency:** Improve background check concurrency.
+*   **Stats/History Performance:** Optimize queries/calculations for many endpoints/clients.
+*   **Group Settings:** Allow configuring settings at the group level within a client.
+*   **Config API:** Add API endpoints to upload/download `config.json`.
+*   **Storage Backends:** Add support for S3/Azure Blob/MinIO for config storage. *(Requires Ask)*
+*   **Identity/Auth Integrations:** Azure Managed Identity support. *(Requires Ask)*
 
 **Requires User Input:**
-*   [ ] Specific endpoint configurations for default testing in `config.json`.
-*   [ ] Mockups/requirements for dedicated *summary* statistics page/overlay.
+*   [ ] Client management UI requirements.
+*   [ ] Requirements for Summary Statistics page.
 *   [ ] Preferred notification channels/formats.
 *   [ ] Requirements for Advanced Checks.
-*   [ ] Requirements/Prioritization for Multi-Client support.
+*   [ ] Requirements/Prioritization for Multi-Client Auth/RBAC (Keycloak details?).
 *   [Confirm] **Proceed with Storage Backend Integration (S3/Azure/MinIO)?**
-*   [Confirm] **Proceed with Identity/Auth Integration (Keycloak/Azure)?**
+*   [Confirm] **Proceed with other Identity/Auth Integration (Azure Managed Identity)?**
 
 **Implemented Features (Summary):**
-*   [X] Background Endpoint Checking (HTTP GET) w/ Per-Endpoint Intervals
+*   [X] Background Endpoint Checking (HTTP GET) w/ Per-Endpoint Overrides
 *   [X] PostgreSQL History Storage (via SQLAlchemy ORM)
-*   [X] Dynamic UI Updates (Status, Details, 24h Uptime %, Interval, Timeout)
-*   [X] Collapsible Endpoint Groups
-*   [X] Runtime Add/Delete/Edit Endpoints (Persistent via `config.json`)
-*   [X] Detailed History Modal with Chart.js (1h/24h/7d)
-*   [X] Configurable Check Interval (Global + Per-Endpoint) & Timeout (Global + Per-Endpoint)
+*   [X] Alembic Database Migrations Initialized
+*   [X] Multi-Client Data Structure (Backend) w/ Default Client
+*   [X] Dynamic UI Updates (Status, Details, 24h Uptime %)
+*   [X] Collapsible Endpoint Groups (per Client)
+*   [X] Runtime Add/Delete/Edit Endpoints (Default Client only via UI) (Persistent via `config.json`)
+*   [X] Detailed History Modal with Chart.js (Response Time + Status Visualization)
+*   [X] Configurable Check Interval & Timeout (Global + Per-Endpoint)
+*   [X] Global Settings Display (Read-Only)
 *   [X] Dockerized Setup (App, DB, Test Server)
-*   [X] Themed UI with JS-Animated Background Elements (Toggleable)
-*   [X] Custom Delete Confirmation Modal
-*   [X] Add/Edit Form Consolidation & Dynamic Group Moves
+*   [X] Themed UI with JS-Animated Background Elements (Toggleable per Client)
+*   [X] Custom Delete/Reload Confirmation Modals
 *   [X] Base Path Deployment Support
-*   [X] Alembic Dependency Added
-*   [X] Manual Config Reload Button/API
-*   [X] Code Refactored into Modules (routes, checker, config_manager, models, database)
+*   [X] Code Refactored into Modules
+*   [X] Robust DB/Table Initialization & Config Loading
 
 ## AI Instructions (Core Development Rules, refactor but keep all messages individually still intact)
 

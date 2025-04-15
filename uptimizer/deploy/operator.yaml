@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uptimizer-operator
+  namespace: default # Or the namespace where you deploy the operator
+  labels:
+    app: uptimizer-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uptimizer-operator
+  template:
+    metadata:
+      labels:
+        app: uptimizer-operator
+    spec:
+      serviceAccountName: uptimizer-operator-sa # Use the SA defined in rbac.yaml
+      containers:
+      - name: operator
+        # IMPORTANT: Replace with your actual operator image path
+        image: your-dockerhub-username/uptimizer-operator:latest
+        imagePullPolicy: Always # Or IfNotPresent after testing
+        env:
+        # KOPF uses this internally to identify the pod (adjust if needed)
+        - name: KOPF_OPERATOR_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KOPF_OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        # Add any other ENV vars needed by the operator itself here
+        # - name: MY_OPERATOR_CONFIG
+        #   value: "some_value"

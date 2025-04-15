@@ -1,0 +1,3 @@
+kopf
+kubernetes
+pyyaml # Often useful for handling YAML/JSON within the operator

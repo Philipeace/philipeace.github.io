@@ -1,0 +1,22 @@
+apiVersion: uptimizer.com/v1alpha1
+kind: UptimizerApp
+metadata:
+  name: my-first-uptimizer
+  namespace: default # Deploy app into this namespace
+spec:
+  # Use the image built by your original Dockerfile
+  image: your-dockerhub-username/uptimizer:v1.2.3
+  replicas: 2
+  port: 5000 # Should match the port your Flask app listens on
+  serviceType: ClusterIP # Or LoadBalancer if you need external access via cloud provider LB
+  # Embed your config.json content here as a JSON string
+  configJson: |
+    {
+      "api_endpoint": "http://example.com/api",
+      "client_id": "uptimizer-app-client",
+      "refresh_interval_seconds": 300,
+      "feature_flags": {
+        "new_dashboard": true,
+        "enable_alerts": false
+      }
+    }

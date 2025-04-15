@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: uptimizer-operator-sa
+  namespace: default # Or the namespace where you deploy the operator
+
+---
+# Note: Using ClusterRole for simplicity, allows managing resources cluster-wide.
+# For production, consider a namespaced Role/RoleBinding if the operator
+# should only manage resources within its own namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: uptimizer-operator-role
+rules:
+# Framework: Watching CRDs & own events/status
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["uptimizer.com"] # Our CRD group
+  resources: ["uptimizerapps", "uptimizerapps/status"] # Resource and its status subresource
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""] # Core API group
+  resources: ["events"]
+  verbs: ["create", "patch"]
+# Application: Managing Deployments, Services, ConfigMaps
+- apiGroups: ["apps"] # Apps API group
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""] # Core API group
+  resources: ["services", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Kopf: Needs permissions to manage leader election configmap/lease
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""] # Core API group
+  resources: ["configmaps"] # For leader election if using configmaps
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: uptimizer-operator-rb
+subjects:
+- kind: ServiceAccount
+  name: uptimizer-operator-sa
+  namespace: default # Must match the ServiceAccount's namespace
+roleRef:
+  kind: ClusterRole
+  name: uptimizer-operator-role
+  apiGroup: rbac.authorization.k8s.io

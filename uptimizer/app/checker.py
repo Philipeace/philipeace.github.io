@@ -6,31 +6,32 @@ from datetime import datetime, timedelta, timezone
 # Use absolute imports
 try:
     from app.database import save_status_change
-    # --- REMOVED Import of DB_ENABLED and DB_TABLES_CREATED ---
-    # from app.models import DB_ENABLED, DB_TABLES_CREATED
+    # No need to import DB flags here; database.py handles checks
 except ImportError as e:
     print(f"Checker Import ERROR: {e}. DB ops disabled.")
-    # DB_ENABLED = False # No longer needed here
-    # DB_TABLES_CREATED = False # No longer needed here
     def save_status_change(*args): print("Checker WARN: save_status_change STUB")
 
 # Import defaults from state module
-from app.state import DEFAULT_CHECK_INTERVAL, DEFAULT_CHECK_TIMEOUT
-
+from app.state import DEFAULT_CHECK_INTERVAL, DEFAULT_CHECK_TIMEOUT # Keep these
 
 def check_endpoint(endpoint, global_settings):
     """Performs a basic HTTP GET check on a single endpoint."""
     url = endpoint.get('url');
     if not url: return {"status": "ERROR", "details": "Missing URL"}
 
+    # Use global timeout from global_settings
     global_timeout = int(global_settings.get('check_timeout_seconds', DEFAULT_CHECK_TIMEOUT))
+
+    # Check for per-endpoint timeout override
     endpoint_timeout_str = endpoint.get('check_timeout_seconds')
     try:
+        # Use endpoint timeout if valid, otherwise global
         timeout = int(endpoint_timeout_str) if endpoint_timeout_str is not None else global_timeout
-        timeout = max(1, timeout)
-    except (ValueError, TypeError): timeout = global_timeout
+        timeout = max(1, timeout) # Ensure timeout is at least 1
+    except (ValueError, TypeError):
+        timeout = global_timeout # Fallback to global on invalid format
 
-    start_time = time.time(); headers = {'User-Agent': 'Uptimizer/1.13.5'}; details_msg = None
+    start_time = time.time(); headers = {'User-Agent': 'Uptimizer/1.13.0'}; details_msg = None # Updated User-Agent
     try:
         response = requests.get(url, timeout=timeout, headers=headers, allow_redirects=True)
         response_time = time.time() - start_time
@@ -48,47 +49,93 @@ def check_endpoint(endpoint, global_settings):
 def run_checks_task(current_state, state_lock):
     """Background task logic: determines which endpoints to check, runs checks, updates state."""
     print(f"BG Task: Cycle Start @ {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    endpoints_to_check_now = []; now = time.time(); new_statuses_this_cycle = {}
+    endpoints_to_check_now = []
+    new_statuses_this_cycle = {} # Store statuses per client: { client_id: { endpoint_id: {...} } }
+    now = time.time()
 
     # Access shared state under lock only when needed
     with state_lock:
-        endpoints_list = list(current_state.get("endpoints", []))
-        global_settings = current_state.get("settings", {})
+        # Deep copy relevant parts of state to avoid holding lock during checks
+        global_settings = current_state.get("global_settings", {}).copy()
+        clients_snapshot = {
+            client_id: {
+                "endpoints": list(client_data.get("endpoints", [])),
+                "statuses": client_data.get("statuses", {}).copy()
+            }
+            for client_id, client_data in current_state.get("clients", {}).items()
+        }
         global_interval = int(global_settings.get("check_interval_seconds", DEFAULT_CHECK_INTERVAL))
-        last_check_statuses_snapshot = current_state.get("statuses", {}).copy()
 
-    if not endpoints_list: print("BG Task: No endpoints configured."); return
+    if not any(client.get("endpoints") for client in clients_snapshot.values()):
+        print("BG Task: No endpoints configured across all clients.")
+        return
 
-    # Determine which endpoints are due
-    for ep in endpoints_list:
-        ep_id = ep.get('id');
-        if not ep_id: continue
-        endpoint_interval_str = ep.get('check_interval_seconds')
-        try: check_interval = int(endpoint_interval_str) if endpoint_interval_str is not None else global_interval; check_interval = max(5, check_interval)
-        except (ValueError, TypeError): check_interval = global_interval
-        last_check_ts = last_check_statuses_snapshot.get(ep_id, {}).get("last_check_ts", 0)
-        if (now - last_check_ts) >= check_interval: endpoints_to_check_now.append(ep)
+    # Determine which endpoints are due across all clients
+    endpoints_checked_count = 0
+    for client_id, client_data in clients_snapshot.items():
+        endpoints_list = client_data.get("endpoints", [])
+        last_check_statuses_snapshot = client_data.get("statuses", {})
+        new_statuses_this_cycle[client_id] = {} # Init status dict for this client
 
-    if not endpoints_to_check_now: print("BG Task: No endpoints due this cycle."); return
+        for ep in endpoints_list:
+            ep_id = ep.get('id')
+            if not ep_id: continue
+
+            # Use global interval from global_settings
+            # Check for per-endpoint interval override
+            endpoint_interval_str = ep.get('check_interval_seconds')
+            try:
+                 # Use endpoint interval if valid, otherwise global
+                check_interval = int(endpoint_interval_str) if endpoint_interval_str is not None else global_interval
+                check_interval = max(5, check_interval) # Ensure interval is at least 5s
+            except (ValueError, TypeError):
+                check_interval = global_interval # Fallback to global on invalid format
+
+            last_check_ts = last_check_statuses_snapshot.get(ep_id, {}).get("last_check_ts", 0)
+            if (now - last_check_ts) >= check_interval:
+                # Add client_id to endpoint data for check_endpoint if needed later,
+                # or pass it to save_status_change
+                endpoints_to_check_now.append({**ep, "client_id": client_id}) # Add client ID context
+
+    if not endpoints_to_check_now:
+        print("BG Task: No endpoints due this cycle.")
+        return
 
     print(f"BG Task: Checking {len(endpoints_to_check_now)} endpoints now...")
     start_check_cycle = time.time()
-    for ep in endpoints_to_check_now:
-        ep_id = ep.get('id')
-        check_result = check_endpoint(ep, global_settings)
-        new_statuses_this_cycle[ep_id] = {"status": check_result.get("status", "UNKNOWN"), "last_check_ts": now, "details": check_result}
-        # --- DB save call remains, relies on save_status_change internal check ---
+    for ep_with_context in endpoints_to_check_now:
+        ep_id = ep_with_context.get('id')
+        client_id = ep_with_context.get('client_id')
+        if not client_id: continue # Should not happen
+
+        check_result = check_endpoint(ep_with_context, global_settings) # Pass global_settings
+        # Store result under the correct client
+        new_statuses_this_cycle[client_id][ep_id] = {
+            "status": check_result.get("status", "UNKNOWN"),
+            "last_check_ts": now,
+            "details": check_result # Store full result including potential response_time etc.
+        }
+        endpoints_checked_count += 1
+
+        # DB save call remains, relies on save_status_change internal check
         try:
+             # Pass endpoint_id only, save_status_change doesn't need client context
              save_status_change(ep_id, check_result)
         except Exception as db_err:
-             print(f"E: DB save error for {ep_id}: {db_err}")
-        # ---------------------------------------------------------------------
+             print(f"E: DB save error for {client_id}/{ep_id}: {db_err}")
+
     cycle_duration = time.time() - start_check_cycle
-    print(f"BG Task: Checked {len(endpoints_to_check_now)} endpoints in {cycle_duration:.2f}s.")
-    if cycle_duration > global_interval: print(f"BG Task: WARNING - Check cycle duration ({cycle_duration:.2f}s) exceeded SCHEDULER interval ({global_interval}s).")
+    print(f"BG Task: Checked {endpoints_checked_count} endpoints in {cycle_duration:.2f}s.")
+    if cycle_duration > global_interval:
+        print(f"BG Task: WARNING - Check cycle duration ({cycle_duration:.2f}s) exceeded SCHEDULER interval ({global_interval}s).")
 
     # Update statuses in shared state under lock
     with state_lock:
-        current_state["statuses"].update(new_statuses_this_cycle)
+        for client_id, client_statuses in new_statuses_this_cycle.items():
+            if client_id in current_state["clients"]:
+                 # Update statuses for the specific client
+                 current_state["clients"][client_id]["statuses"].update(client_statuses)
+            else:
+                 print(f"WARN: Client '{client_id}' not found in state during status update.")
         current_state["last_updated"] = now
-    print(f"BG Task: Updated memory status for {len(new_statuses_this_cycle)} checked endpoints.")
+    print(f"BG Task: Updated memory status for {endpoints_checked_count} checked endpoints across {len(new_statuses_this_cycle)} clients.")

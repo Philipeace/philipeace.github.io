@@ -1,0 +1,76 @@
+variables:
+  # Define image names - uses GitLab predefined variables
+  APP_IMAGE: $CI_REGISTRY_IMAGE/uptimizer-app:$CI_COMMIT_TAG # Tagged releases for app
+  OPERATOR_IMAGE: $CI_REGISTRY_IMAGE/uptimizer-operator:$CI_COMMIT_TAG # Tagged releases for operator
+  LATEST_APP_IMAGE: $CI_REGISTRY_IMAGE/uptimizer-app:latest
+  LATEST_OPERATOR_IMAGE: $CI_REGISTRY_IMAGE/uptimizer-operator:latest
+
+stages:
+  - build
+
+# Login to GitLab Container Registry
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+build_app_image:
+  stage: build
+  image: docker:20.10.16 # Use a Docker-in-Docker enabled image
+  services:
+    - docker:20.10.16-dind
+  script:
+    - echo "Building Application Image..."
+    # Build using the Dockerfile at the root of your project
+    - docker build -t $APP_IMAGE -t $LATEST_APP_IMAGE -f Dockerfile .
+    - echo "Pushing Application Image $APP_IMAGE..."
+    - docker push $APP_IMAGE
+    - echo "Pushing Application Image $LATEST_APP_IMAGE..."
+    - docker push $LATEST_APP_IMAGE
+  rules:
+    # Build on tags (for releases)
+    - if: $CI_COMMIT_TAG
+    # Build on default branch (e.g., main/master) for latest tag
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+build_operator_image:
+  stage: build
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  script:
+    - echo "Building Operator Image..."
+    # Build using the Dockerfile inside the operator directory
+    - docker build -t $OPERATOR_IMAGE -t $LATEST_OPERATOR_IMAGE -f operator/Dockerfile ./operator
+    - echo "Pushing Operator Image $OPERATOR_IMAGE..."
+    - docker push $OPERATOR_IMAGE
+    - echo "Pushing Operator Image $LATEST_OPERATOR_IMAGE..."
+    - docker push $LATEST_OPERATOR_IMAGE
+  rules:
+    # Build on tags (for releases)
+    - if: $CI_COMMIT_TAG
+    # Build on default branch (e.g., main/master) for latest tag
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# --- Optional: Deployment Stage ---
+# This is more complex and depends heavily on your cluster access strategy from GitLab CI.
+# Common methods:
+# 1. Using kubectl with a configured KUBECONFIG context in CI/CD variables.
+# 2. Using a GitOps tool like Argo CD or Flux (recommended for production).
+# 3. Using GitLab Agent for Kubernetes.
+
+# Example using kubectl (ensure runner has kubectl and access)
+# deploy_operator:
+#   stage: deploy
+#   image: google/cloud-sdk:latest # Or any image with kubectl
+#   script:
+#     - echo "Applying Operator manifests..."
+#     # Assumes KUBECONFIG is set up in CI/CD variables or runner environment
+#     - kubectl apply -f deploy/crd.yaml
+#     - kubectl apply -f deploy/rbac.yaml
+#     # Update the operator deployment image tag if needed
+#     - sed -i "s|image: .*|image: $OPERATOR_IMAGE|g" deploy/operator.yaml
+#     - kubectl apply -f deploy/operator.yaml
+#   rules:
+#     # Deploy only on tags
+#     - if: $CI_COMMIT_TAG
+#   needs:
+#     - build_operator_image # Ensure operator image is built first

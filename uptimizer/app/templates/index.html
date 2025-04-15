@@ -9,57 +9,120 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
-<body class="{{ 'floating-disabled' if app_settings.disable_floating_elements else '' }}">
+{# Determine initial floating state based on the initially active client #}
+{% set initial_active_client_settings = clients_data.get(initial_active_client_id, {}).get('settings', {}) %}
+<body class="{{ 'floating-disabled' if initial_active_client_settings.get('disable_floating_elements') else '' }}">
     <!-- Container for Floating Elements -->
     <div class="floating-element-container" id="floating-elements"></div>
 
     <div class="container">
         <h1>Uptimizer - Keepin' Tabs on the Tabs</h1>
 
-        <!-- Add New Endpoint Button -->
-        <div class="add-edit-form-container">
-             <button onclick="openAddEditModal(null)">+ Add New Endpoint</button>
+        <!-- Global Settings Display -->
+        <div class="global-settings-display">
+             Global Interval: <span id="global-interval-val">{{ global_settings.check_interval_seconds | default('--') }}</span>s |
+             Global Timeout: <span id="global-timeout-val">{{ global_settings.check_timeout_seconds | default('--') }}</span>s
+             {# TODO: Add Edit button/modal later #}
         </div>
 
-        <!-- Endpoint List -->
-        {% if endpoints and endpoints | length > 0 %}
-            {% for group, items in endpoints | groupby('group') %}
-            <div class="group-container" data-group-name="{{ group if group else 'Default Group' }}">
-                <div class="group-header" onclick="toggleGroup(this)"> <span class="group-title">{{ group if group else 'Default Group' }}</span> <span class="group-toggle">▼</span> </div>
-                <div class="group-content">
-                    <ul class="endpoint-list" id="endpoint-list-{{ group | escape | replace(' ', '-') | lower if group else 'default-group' }}">
-                        {% for endpoint in items %}
-                        <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}" id="endpoint-item-{{ endpoint.id }}" onclick="openHistoryModalMaybe(event, '{{ endpoint.id }}')">
-                            <div class="endpoint-name">{{ endpoint.name }}</div>
-                            <div class="endpoint-url">{{ endpoint.url }}</div>
-                            <div class="endpoint-interval" id="interval-{{ endpoint.id }}"> <span class="value">--s</span> <span class="global">(global)</span> </div>
-                            <div class="endpoint-timeout" id="timeout-{{ endpoint.id }}"> <span class="value">--s</span> <span class="global">(global)</span> </div>
-                            <div class="endpoint-status status-unknown" id="status-{{ endpoint.id }}">PENDING</div>
-                            <div class="endpoint-details" id="details-{{ endpoint.id }}"> </div>
-                            <div class="endpoint-stats" id="stats-{{ endpoint.id }}">-- %</div>
-                            <div class="endpoint-actions">
-                                <button class="edit-btn" title="Edit Endpoint" onclick="openAddEditModal(event, '{{ endpoint.id }}')">✎</button>
-                                <button class="delete-btn" title="Delete Endpoint" onclick="confirmDeleteEndpoint(event, '{{ endpoint.id }}')">×</button>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
+        <!-- Client Tabs -->
+        <div class="client-tab-container" id="client-tabs">
+            {% for client_id in sorted_client_ids %}
+                {% set client_info = clients_data[client_id] %}
+                {% set client_settings = client_info.settings %}
+                <button class="client-tab {{ 'active' if client_id == initial_active_client_id else '' }}" data-client-id="{{ client_id }}">
+                    {{ client_settings.name | default(client_id) }}
+                </button>
+            {% else %}
+                <button class="client-tab active" data-client-id="{{ DEFAULT_CLIENT_ID }}">
+                    Default Client
+                </button>
             {% endfor %}
-        {% else %}
-             <div class="group-container" data-group-name="Default Group"> <div class="group-header" onclick="toggleGroup(this)"> <span class="group-title">Default Group</span> <span class="group-toggle">▼</span> </div> <div class="group-content"> <ul class="endpoint-list" id="endpoint-list-default-group"> <li id="no-endpoints-message" style="text-align: center; padding: 20px; font-style: italic;">No endpoints configured. Add one!</li> </ul> </div> </div>
-        {% endif %}
+        </div>
 
-         <!-- Template for new endpoint row -->
+         <!-- Add New Endpoint Button (Adds to the ACTIVE Client) -->
+        <div class="add-edit-form-container">
+             <button id="add-endpoint-btn" onclick="openAddEditModal(null)">+ Add Endpoint (Default Client)</button> {# Text updated dynamically by JS #}
+        </div>
+
+
+        <!-- Client Content Area -->
+        <div id="client-content-container">
+            {% for client_id in sorted_client_ids %}
+                {% set client_info = clients_data[client_id] %}
+                {% set client_settings = client_info.settings %}
+                {% set client_endpoints = client_info.endpoints %}
+
+                <div class="client-tab-content {{ 'active' if client_id == initial_active_client_id else '' }}" id="client-content-{{ client_id }}" data-client-id="{{ client_id }}">
+
+                    {# Client-Specific Settings Display/Controls - Can be enhanced later #}
+                    {# Example:
+                       <div class="client-settings-panel">
+                           <h4>Client Settings for {{ client_settings.name | default(client_id) }}</h4>
+                           <p>Floating Elements: <span id="client-{{client_id}}-floating-status">{% if client_settings.disable_floating_elements %}Disabled{% else %}Enabled{% endif %}</span></p>
+                           <button>Edit Client Settings</button> {# Placeholder #}
+                       </div>
+                    #}
+
+
+                    {# --- Groups within Client --- #}
+                    {% if client_endpoints and client_endpoints | length > 0 %}
+                         {% for group, items in client_endpoints | groupby('group') %}
+                         <div class="group-container" data-client-id="{{ client_id }}" data-group-name="{{ group if group else 'Default Group' }}">
+                             <div class="group-header" onclick="toggleGroup(this)">
+                                 <span class="group-title">{{ group if group else 'Default Group' }}</span>
+                                 <span class="group-toggle">▼</span>
+                             </div>
+                             <div class="group-content"> {# Start expanded by default #}
+                                 <ul class="endpoint-list" id="endpoint-list-{{ client_id }}-{{ group | escape | replace(' ', '-') | lower if group else 'default-group' }}">
+                                     {% for endpoint in items %}
+                                     {# Generate endpoint row using template structure (but directly here) #}
+                                     <li class="endpoint-item" data-endpoint-id="{{ endpoint.id }}" data-client-id="{{ client_id }}" id="endpoint-item-{{ endpoint.id }}" onclick="openHistoryModalMaybe(event, '{{ endpoint.id }}')">
+                                         <div class="endpoint-name">{{ endpoint.name }}</div>
+                                         <div class="endpoint-url">{{ endpoint.url }}</div>
+                                         <div class="endpoint-status status-unknown" id="status-{{ endpoint.id }}">PENDING</div>
+                                         <div class="endpoint-details" id="details-{{ endpoint.id }}"> </div>
+                                         <div class="endpoint-stats" id="stats-{{ endpoint.id }}">-- %</div>
+                                         <div class="endpoint-actions">
+                                             <button class="edit-btn" title="Edit Endpoint" onclick="openAddEditModal(event, '{{ endpoint.id }}', '{{ client_id }}')">✎</button>
+                                             <button class="delete-btn" title="Delete Endpoint" onclick="confirmDeleteEndpoint(event, '{{ endpoint.id }}', '{{ client_id }}')">×</button>
+                                         </div>
+                                     </li>
+                                     {% endfor %}
+                                 </ul>
+                             </div>
+                         </div>
+                         {% endfor %}
+                    {% else %}
+                         {# Display message if client has no endpoints #}
+                         <div class="group-container no-endpoints-client" data-client-id="{{ client_id }}">
+                             <div class="group-header" style="cursor: default;">
+                                 <span class="group-title italic-placeholder">No endpoints configured for this client.</span>
+                             </div>
+                         </div>
+                    {% endif %}
+
+                </div> {# End client-tab-content #}
+
+            {% else %}
+                 {# Handle case where there are no clients at all (e.g., initial load with empty config) #}
+                 <div class="client-tab-content active" id="client-content-{{ DEFAULT_CLIENT_ID }}" data-client-id="{{ DEFAULT_CLIENT_ID }}">
+                     <div class="group-container no-endpoints-client" data-client-id="{{ DEFAULT_CLIENT_ID }}">
+                         <div class="group-header" style="cursor: default;">
+                             <span class="group-title italic-placeholder">No clients or endpoints configured. Add an endpoint to the 'Default Client'.</span>
+                         </div>
+                     </div>
+                 </div>
+            {% endfor %}
+        </div> {# End client-content-container #}
+
+         <!-- Template for new endpoint row (used by JS) -->
          <template id="endpoint-row-template">
-            <li class="endpoint-item" data-endpoint-id="" id="" onclick="">
+            <li class="endpoint-item" data-endpoint-id="" data-client-id="" id="" onclick="">
                 <div class="endpoint-name"></div>
                 <div class="endpoint-url"></div>
-                <div class="endpoint-interval" id="">Int: <span class="value">--s</span> <span class="global">(global)</span></div>
-                <div class="endpoint-timeout" id="">Timeout: <span class="value">--s</span> <span class="global">(global)</span></div>
                 <div class="endpoint-status status-pending" id="">PENDING</div>
-                <div class="endpoint-details" id=""> </div>
+                <div class="endpoint-details" id=""> </div>
                 <div class="endpoint-stats" id="">-- %</div>
                 <div class="endpoint-actions">
                     <button class="edit-btn" title="Edit Endpoint" onclick="">✎</button>
@@ -70,30 +133,30 @@
     </div>
 
     <footer>
-        <p>Uptimizer - Your friendly neighbourhood uptime bot.</p>
+        <p>Uptimizer v1.14.0 - Tabs on Tabs on Tabs.</p> {# Version Bump #}
         <p id="footer-status">Initializing status checks...</p>
         <div id="settings-toggles">
-            <button id="toggle-floating">Toggle Floating Elements</button>
-            <button id="refresh-config-btn">Refresh Config from File</button> {# Added Reload Button #}
+            <button id="toggle-floating" data-client-id="{{ initial_active_client_id }}">Toggle Floating (Client)</button> {# Text/Client updated by JS #}
+            <button id="refresh-config-btn">Refresh Config from File</button>
         </div>
     </footer>
 
-    <!-- History Modal Structure -->
+    <!-- History Modal Structure (Unchanged) -->
     <div class="modal-overlay history-modal" id="history-modal-overlay"> <div class="modal-content"> <button class="modal-close-btn" onclick="closeHistoryModal()">×</button> <div class="modal-header"> <h3 class="modal-title" id="history-modal-title">Endpoint History</h3> </div> <div class="modal-controls"> <button data-period="1h" onclick="changeHistoryPeriod(this)">Last Hour</button> <button data-period="24h" onclick="changeHistoryPeriod(this)" class="active">Last 24 Hours</button> <button data-period="7d" onclick="changeHistoryPeriod(this)">Last 7 Days</button> </div> <div class="modal-body"> <div class="modal-chart-container"> <canvas id="history-chart"></canvas> </div> <p id="history-modal-error" class="form-error-msg"></p> </div> </div> </div>
 
-    <!-- Combined Add/Edit Modal Structure -->
+    <!-- Combined Add/Edit Modal Structure (Unchanged) -->
     <div class="modal-overlay edit-modal" id="add-edit-modal-overlay">
         <div class="modal-content">
             <button class="modal-close-btn" onclick="closeAddEditModal()">×</button>
             <div class="modal-header"> <h3 class="modal-title" id="add-edit-modal-title">Add/Edit Endpoint</h3> </div>
             <div class="modal-body">
-                <form id="add-edit-endpoint-form" class="modal-form">
+                <form id="add-edit-endpoint-form" class="modal-form" data-client-id=""> {# client-id added by JS #}
                     <input type="hidden" id="edit-endpoint-id" name="id">
                     <div class="form-group"> <label for="endpoint-name">Name:</label> <input type="text" id="endpoint-name" name="name" required> </div>
                     <div class="form-group"> <label for="endpoint-group">Group:</label> <input type="text" id="endpoint-group" name="group" placeholder="Default Group"> </div>
                     <div class="form-group form-group-full"> <label for="endpoint-url">URL:</label> <input type="text" id="endpoint-url" name="url" placeholder="https://example.com" required> <span class="url-warning" id="url-dot-warning" style="display: none;">(URL missing '.')</span> </div>
-                    <div class="form-group"> <label for="endpoint-interval">Interval (s, opt):</label> <input type="number" id="endpoint-interval" name="check_interval_seconds" placeholder="{{ app_settings.check_interval_seconds | default(30) }}" min="5"> </div>
-                    <div class="form-group"> <label for="endpoint-timeout">Timeout (s, opt):</label> <input type="number" id="endpoint-timeout" name="check_timeout_seconds" placeholder="{{ app_settings.check_timeout_seconds | default(10) }}" min="1"> </div>
+                    <div class="form-group"> <label for="endpoint-interval">Interval (s, opt):</label> <input type="number" id="endpoint-interval" name="check_interval_seconds" placeholder="{{ global_settings.check_interval_seconds | default(30) }}" min="5"> </div>
+                    <div class="form-group"> <label for="endpoint-timeout">Timeout (s, opt):</label> <input type="number" id="endpoint-timeout" name="check_timeout_seconds" placeholder="{{ global_settings.check_timeout_seconds | default(10) }}" min="1"> </div>
                     <p id="add-edit-endpoint-error" class="form-error-msg form-group-full"></p>
                     <button type="submit" class="form-group-full">Save Endpoint</button>
                 </form>
@@ -101,13 +164,20 @@
         </div>
     </div>
 
-    <!-- Confirmation Modal Structure -->
+    <!-- Confirmation Modal Structure (DELETE) (Unchanged) -->
      <div class="modal-overlay confirm-modal" id="confirm-modal-overlay"> <div class="modal-content"> <button class="modal-close-btn" onclick="closeConfirmModal()">×</button> <div class="modal-header"> <h3 class="modal-title" id="confirm-modal-title">Confirm Action</h3> </div> <div class="modal-body confirm-body"> <p id="confirm-modal-message">Are you sure?</p> </div> <div class="modal-footer"> <button class="confirm-btn-no" id="confirm-no-btn">Cancel</button> <button class="confirm-btn-yes" id="confirm-yes-btn">Confirm</button> </div> </div> </div>
+
+    <!-- Confirmation Modal Structure (RELOAD SUCCESS) (Unchanged - maybe obsolete) -->
+     <div class="modal-overlay confirm-modal" id="reload-confirm-modal-overlay"> <div class="modal-content"> <button class="modal-close-btn" onclick="closeReloadConfirmModal()">×</button> <div class="modal-header"> <h3 class="modal-title" id="reload-confirm-modal-title">Reload Successful</h3> </div> <div class="modal-body confirm-body"> <p id="reload-confirm-modal-message">Configuration reloaded successfully from file.</p> </div> <div class="modal-footer"> <button class="confirm-btn-yes" id="reload-confirm-refresh-btn">Refresh Page</button> <button class="confirm-btn-no" id="reload-confirm-close-btn">Close</button> </div> </div> </div>
+
 
     {# Inject initial data for JavaScript #}
     <script>
-        const initialEndpointData = {{ endpoint_data | default({}) | tojson }};
-        const initialAppSettings = {{ app_settings | default({}) | tojson }};
+        const initialClientsData = {{ clients_data | default({}) | tojson }};
+        const initialGlobalSettings = {{ global_settings | default({}) | tojson }};
+        const allInitialEndpointData = {{ all_endpoint_data | default({}) | tojson }};
+        const defaultClientId = {{ DEFAULT_CLIENT_ID | tojson }};
+        const initialActiveClientId = {{ initial_active_client_id | tojson }}; // Pass initial active client
     </script>
     {# Link external JavaScript file #}
     <script src="{{ url_for('static', filename='script.js') }}"></script>

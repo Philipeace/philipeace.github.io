@@ -1,3 +1,4 @@
+# .gitignore
 # Python
 __pycache__/
 *.pyc
@@ -14,6 +15,16 @@ htmlcov/
 dist/
 build/
 *.so
+*.log
+*.pot
+*.pytx
+
+# Database
+*.db
+*.sqlite3
+
+# Environment variables
+.env
 
 # Docker
 .dockerignore
@@ -22,7 +33,11 @@ build/
 .idea/
 .vscode/
 
+# Alembic (Optional: Add if you want to commit migrations)
+# alembic/versions/
+
 # Other
 *.log
 *.pot
 *.pytx
+*.tmp
