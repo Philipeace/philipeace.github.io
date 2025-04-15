@@ -49,7 +49,7 @@
                 "disable_floating_elements": false,
                 "client_type": "local",
                 "api_enabled": true,
-                "api_token": "ImFub3RoZXJfY2xpZW50Ig.Z_4Ixw.ViqQRTEs3tYh125MK5GVwsmL0Ws",
+                "api_token": "ImFub3RoZXJfY2xpZW50Ig.Z_4J-w.khUpc5joacZhZsTGgfxdVw9Hj8E",
                 "remote_url": null
             },
             "endpoints": [
@@ -82,7 +82,7 @@
             "settings": {
                 "name": "test",
                 "client_type": "local",
-                "disable_floating_elements": false,
+                "disable_floating_elements": true,
                 "api_enabled": false,
                 "api_token": null,
                 "remote_url": null
@@ -97,6 +97,17 @@
                 "api_enabled": false,
                 "api_token": "test",
                 "remote_url": "https://test.com/uptimier"
+            },
+            "endpoints": []
+        },
+        "client_c845bfcb8609": {
+            "settings": {
+                "name": "localhost",
+                "client_type": "linked",
+                "disable_floating_elements": false,
+                "api_enabled": false,
+                "api_token": "ImFub3RoZXJfY2xpZW50Ig.Z_4J-w.khUpc5joacZhZsTGgfxdVw9Hj8E",
+                "remote_url": "https://localhost:5000"
             },
             "endpoints": []
         }
